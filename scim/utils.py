@@ -47,7 +47,7 @@ def make_network(doutput,
     return tf.keras.Sequential(net, **kwargs)
 
 
-def plot_training(trainer, axes):
+def plot_training(trainer, axes, OUTDIR):
     assert len(axes) >= 3
     loss_keys = trainer.history['train'].keys()
 
@@ -58,6 +58,7 @@ def plot_training(trainer, axes):
     plot_history_keys(trainer, mse_keys + disc_keys, axes[0])
     plot_history_keys(trainer, probs_keys, axes[1])
     plot_history_keys(trainer, ['divergence'], axes[2])
+    plt.savefig(OUTDIR / f'training_curve_initializing.png', dpi=300)
     return
 
 
