@@ -22,7 +22,7 @@ tf.compat.v1.enable_eager_execution()
 # Define constants and paths
 OUTDIR = Path('/cluster/scratch/hugifl/glycomics')
 TECHS = ['lectin', 'AB']
-LABEL = 'cell_type_final'
+LABEL = 'celltype_major'
 
 def get_number_of_genes(full, tech_no=0):
     # Assuming all datasets have the same number of genes
@@ -85,7 +85,7 @@ def perform_pca_and_plot(data):
         sc.tl.pca(data[key], svd_solver='arpack')
 
         # Plotting
-        for jdx, color in enumerate(['cell_type_final']):
+        for jdx, color in enumerate(['celltype_major']):
             ax = axes[idx, jdx]
             sc.pl.pca(data[key], color=color, ax=ax, show=False)
             ax.set_title(f'{key} {color}')
@@ -111,7 +111,7 @@ def visualize_latent_space(trainer, full, source_tech):
         print(f'Caching to {path}')
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    for idx, key in enumerate(['cell_type_final']):
+    for idx, key in enumerate(['celltype_major']):
         sc.pl.pca(codes, color=key, ax=axes[0, idx], show=False)
         sc.pl.tsne(codes, color=key, ax=axes[1, idx], show=False)
     plt.savefig(OUTDIR / 'Initiated_latent_space_plot.png', dpi=300)
@@ -370,14 +370,14 @@ def main():
 
     # Plot t-SNE for 'cell_type'
     kwargs = {}  # Add any specific keyword arguments you need for 'cell_type'
-    sc.pl.tsne(evald, color='cell_type_final', ax=axes, show=False, **kwargs)
+    sc.pl.tsne(evald, color='celltype_major', ax=axes, show=False, **kwargs)
     plt.savefig(OUTDIR / 'tsne_integrated_latent_space_2.png', dpi=300)
     plt.close(fig)
 
     fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
 
     # First subplot for 'cell_type'
-    sc.pl.tsne(evald, color='cell_type_final', ax=axes[0], show=False)
+    sc.pl.tsne(evald, color='celltype_major', ax=axes[0], show=False)
     axes[0].set_title('t-SNE colored by Cell Type')
 
     # Second subplot for 'tech'
