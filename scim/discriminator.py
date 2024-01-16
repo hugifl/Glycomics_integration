@@ -38,7 +38,7 @@ class CriticBase(tf.keras.Model):
             data = self.condition_inputs(data, labels)
         return self.net(data)
 
-    def loss(self, data, real, gave_logits=False, labels=None):
+    def loss(self, data, real, gave_logits=False, labels=None):  # this loss we use in the adversarial step. data is the AB data and real it's labels 
         '''Discriminator loss
 
         Try to classify real data as true, generated data as fake.
@@ -128,7 +128,7 @@ class SpectralNormMixin:
 
         return sigma_lut
 
-    def loss(self, *args, normalize=None, **kwargs):
+    def loss(self, *args, normalize=None, **kwargs):  # this loss we use in the adversarial step
 
         if normalize is None:
             normalize = tf.keras.backend.learning_phase()

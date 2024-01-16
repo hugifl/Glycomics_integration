@@ -49,6 +49,12 @@ class Trainer:
 
         return tf.compat.v1.train.Checkpoint(**ckpt_lut)
 
+
+    def update_source_key(self, new_source_key):
+        self.source_key = new_source_key
+        # Ensure that this change is recognized by the checkpoint system
+        #self.saver._update_dependencies()
+
     def restore(self, ckpt_dir):
         path = tf.compat.v1.train.latest_checkpoint(ckpt_dir)
         res = self.saver.restore(path)
@@ -56,25 +62,13 @@ class Trainer:
         res.assert_nontrivial_match()
         return
 
-    def vae_step(self, tech, inputs, beta=None):
-        tf.keras.backend.set_learning_phase(True)
-        vae = self.vae_lut[tech]
-        opt = self.genopt_lut[tech]
 
-        tvs = vae.trainable_variables
-        with tf.GradientTape() as tape:
-            loss, (mse, kl), (codes, recon) = vae.call(inputs, beta=beta)
-
-        grads = tape.gradient(loss, tvs)
-        opt.apply_gradients(zip(grads, tvs))
-        return loss, (mse, kl), (codes, recon)
-
-    def discriminator_loss(self, tech,
+    def discriminator_loss(self, tech,    # in the first cycle, tech will be AB
                            codes, prior_codes,
                            code_label, prior_label):
 
-        is_source = tech == self.source_key
-        data_loss = self.discriminator.loss(codes,
+        is_source = tech == self.source_key       
+        data_loss = self.discriminator.loss(codes,   # this is the loss funciton of discriminator.py data = codes
                                             labels=code_label,
                                             real=is_source)
 
@@ -85,7 +79,7 @@ class Trainer:
         return disc_loss, (data_loss, prior_loss)
 
     def discriminator_step(self,
-                           dtech, ptech,
+                           dtech, ptech,                  # ptech is target (eg lectin in our case), the technology we want to integrate to (the prior)
                            data, prior,
                            dlabel=None, plabel=None,
                            ):
@@ -105,12 +99,25 @@ class Trainer:
         self.disopt.apply_gradients(zip(grads, tvs))
         return disc_loss, (data_loss, prior_loss)
 
-    def adversarial_step(self, tech, data, label=None):
+    def vae_step(self, tech, inputs, beta=None):
+        tf.keras.backend.set_learning_phase(True)
+        vae = self.vae_lut[tech]
+        opt = self.genopt_lut[tech]
+
+        tvs = vae.trainable_variables
+        with tf.GradientTape() as tape:
+            loss, (mse, kl), (codes, recon) = vae.call(inputs, beta=beta)
+
+        grads = tape.gradient(loss, tvs)
+        opt.apply_gradients(zip(grads, tvs))
+        return loss, (mse, kl), (codes, recon)
+
+    def adversarial_step(self, tech, data, label=None): # in the first cycle, tech will be AB and data the AB training data, label is the AB labels
 
         tf.keras.backend.set_learning_phase(True)
         vae = self.vae_lut[tech]
         opt = self.genopt_lut[tech]
-        is_source = tech is self.source_key
+        is_source = tech is self.source_key    # False for AB
         tvs = vae.trainable_variables
 
         with tf.GradientTape() as tape:
@@ -118,7 +125,7 @@ class Trainer:
             adv = self.discriminator.loss(codes,
                                           labels=label,
                                           real=not is_source)
-            loss = nll + self.beta * adv
+            loss = nll + self.beta * adv                  # nll is the reconstruction loss
 
         grads = tape.gradient(loss, tvs)
         opt.apply_gradients(zip(grads, tvs))

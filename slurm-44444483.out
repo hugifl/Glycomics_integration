@@ -1,0 +1,58 @@
+/cluster/home/hugifl/.local/lib/python3.7/site-packages/numpy/lib/arraysetops.py:608: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  mask |= (ar1 == a)
+computing common genes
+number of common genes:  10242
+filtering and saving dataset 1
+conc:  0.1
+conc:  0.25
+conc:  0.5
+conc:  1
+conc:  2
+filtering and saving dataset 2
+conc:  0.1
+conc:  0.5
+conc:  1
+conc:  2
+Number of cells from conc 0.1 before filtering: 1345
+Number of cells from conc 0.1 after filtering: 0
+entry of first ADT field: 200.0
+shape of adt_data: (0, 30)
+Number of cells from conc 0.25 before filtering: 585
+Number of cells from conc 0.25 after filtering: 0
+entry of first ADT field: 162.0
+shape of adt_data: (0, 30)
+Number of cells from conc 0.5 before filtering: 1110
+Number of cells from conc 0.5 after filtering: 0
+entry of first ADT field: 193.0
+shape of adt_data: (0, 30)
+Number of cells from conc 1 before filtering: 827
+Number of cells from conc 1 after filtering: 0
+entry of first ADT field: 225.0
+shape of adt_data: (0, 30)
+Number of cells from conc 2 before filtering: 1688
+Number of cells from conc 2 after filtering: 0
+entry of first ADT field: 216.0
+shape of adt_data: (0, 30)
+Number of cells from conc 0.1 before filtering: 553
+Number of cells from conc 0.1 after filtering: 0
+entry of first ADT field: 1391.0
+shape of adt_data: (0, 16)
+Number of cells from conc 0.5 before filtering: 1448
+Number of cells from conc 0.5 after filtering: 0
+entry of first ADT field: 2819.0
+shape of adt_data: (0, 16)
+Number of cells from conc 1 before filtering: 1213
+Number of cells from conc 1 after filtering: 0
+entry of first ADT field: 2930.0
+shape of adt_data: (0, 16)
+Number of cells from conc 2 before filtering: 1440
+Number of cells from conc 2 after filtering: 0
+entry of first ADT field: 1031.0
+shape of adt_data: (0, 16)
+Traceback (most recent call last):
+  File "data_prep.py", line 53, in <module>
+    AB_normalized_gene_data = normalize_to_median_sample(AB_gene_data, sample_size=500)
+  File "/cluster/home/hugifl/scim/utils_data_prep.py", line 340, in normalize_to_median_sample
+    random_sample = data[np.random.choice(data.shape[0], sample_size, replace=False), :]
+  File "mtrand.pyx", line 909, in numpy.random.mtrand.RandomState.choice
+ValueError: a must be greater than 0 unless no samples are taken

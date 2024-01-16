@@ -20,7 +20,7 @@ from scim.matching import get_cost_knn_graph, mcmf
 tf.compat.v1.enable_eager_execution()
 
 # Define constants and paths
-OUTDIR = Path('/cluster/scratch/hugifl/glycomics')
+OUTDIR = Path('/cluster/scratch/hugifl/glycomics_even_longer_integration')
 TECHS = ['lectin', 'AB']
 LABEL = 'celltype_major'
 
@@ -30,28 +30,6 @@ def get_number_of_genes(full, tech_no=0):
     print("number of genes: ", full[first_tech].n_vars)
     return full[first_tech].n_vars
 
-# Load data and split into train and test sets
-def load_and_split_data_old():
-    full, train_datasets, test_datasets = {}, {}, {}
-    for tech in TECHS:
-        path = OUTDIR / f'{tech}.h5ad'
-        data = anndata.read(path)
-        n_markers = data.X.shape[1]
-
-        # Split data
-        train_idx = np.random.rand(len(data)) < 0.8
-        train_data = data[train_idx]
-        test_data = data[~train_idx]
-
-        # Create TensorFlow datasets
-        train_datasets[tech] = tf.data.Dataset.from_tensor_slices(
-            (train_data.X, train_data.obs[LABEL].cat.codes))
-        test_datasets[tech] = tf.data.Dataset.from_tensor_slices(
-            (test_data.X, test_data.obs[LABEL].cat.codes))
-
-        full[tech] = data
-
-    return full, train_datasets, test_datasets, n_markers
 
 def load_and_split_data():
     full, train_datasets, test = {}, {}, {}
@@ -59,6 +37,7 @@ def load_and_split_data():
     for tech in TECHS:
         path = OUTDIR / f'{tech}.h5ad'
         data = anndata.read(path)
+        data.obs[LABEL] = data.obs[LABEL].astype('category')
         n_markers = data.X.shape[1]
         n_markers_dict[tech] = n_markers
         # Split data
@@ -78,23 +57,54 @@ def load_and_split_data():
 
     return full, train_datasets, test, n_markers_dict
 
+
 def perform_pca_and_plot(data):
-    fig, axes = plt.subplots(3, 2, figsize=(12, 12))  # 3 rows, 2 columns
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))  # 1 row, 2 columns
     for idx, key in enumerate(TECHS):
         # Perform PCA on the full dataset
         sc.tl.pca(data[key], svd_solver='arpack')
 
-        # Plotting
-        for jdx, color in enumerate(['celltype_major']):
-            ax = axes[idx, jdx]
-            sc.pl.pca(data[key], color=color, ax=ax, show=False)
-            ax.set_title(f'{key} {color}')
+        # Convert to categorical type for visualization
+        data[key].obs[LABEL] = data[key].obs[LABEL].astype('category')
 
-    plt.savefig(OUTDIR / 'PCA_plot.png', dpi=300, bbox_inches='tight')
+        # Plotting PCA for each technology
+        ax = axes[idx]  # Use index to select the subplot
+        sc.pl.pca(data[key], color='celltype_major', ax=ax, show=False)
+        ax.set_title(f'{key} PCA')
+
+    # Adjust the layout and save the figure
+    plt.tight_layout()
+    plt.savefig(OUTDIR / 'PCA_plot.png', dpi=300)
+    plt.close(fig)
+
+def perform_pca_and_plot_reconstructions(trainer, original_data, source_tech, outdir):
+    save_path = outdir / f'PCA_{source_tech}_reconstructions.png'
+    # Reconstruct the data
+    trainer.forward(source_tech, original_data, 'celltype_major')
+    reconstructed_data = original_data.obsm['recon']
+
+    # Transfer the 'celltype_major' column to the reconstructed data
+    # Ensure the 'celltype_major' column is present in the original_data.obs
+    reconstructed_adata = anndata.AnnData(X=reconstructed_data, obs=original_data.obs[['celltype_major']])
+
+    # Perform PCA on both original and reconstructed data
+    sc.tl.pca(original_data, svd_solver='arpack')
+    sc.tl.pca(reconstructed_adata, svd_solver='arpack')
+
+    # Plotting
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    
+    # Plot PCA of original data
+    sc.pl.pca(original_data, color='celltype_major', ax=axes[0], title='Original Data PCA')
+
+    # Plot PCA of reconstructed data
+    sc.pl.pca(reconstructed_adata, color='celltype_major', ax=axes[1], title='Reconstructed Data PCA')
+
+    plt.tight_layout()
+    plt.savefig(save_path)
     plt.close(fig)
 
 def visualize_latent_space(trainer, full, source_tech):
-
     path = OUTDIR / f'1_init_{source_tech}_codes.h5ad'
     path.parent.mkdir(exist_ok=True, parents=True)
 
@@ -110,13 +120,22 @@ def visualize_latent_space(trainer, full, source_tech):
         codes.write(path)
         print(f'Caching to {path}')
 
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    for idx, key in enumerate(['celltype_major']):
-        sc.pl.pca(codes, color=key, ax=axes[0, idx], show=False)
-        sc.pl.tsne(codes, color=key, ax=axes[1, idx], show=False)
-    plt.savefig(OUTDIR / 'Initiated_latent_space_plot.png', dpi=300)
-    plt.close(fig)
+    # Adjust subplot layout to 2 rows, 1 column
+    fig, axes = plt.subplots(2, 1, figsize=(12, 8))
+    
+    # Convert to categorical type for visualization
+    codes.obs[LABEL] = codes.obs[LABEL].astype('category')
 
+    # Plot PCA
+    sc.pl.pca(codes, color='celltype_major', ax=axes[0], show=False)
+    axes[0].set_title(f'{source_tech} PCA')
+
+    # Plot t-SNE
+    sc.pl.tsne(codes, color='celltype_major', ax=axes[1], show=False)
+    axes[1].set_title(f'{source_tech} t-SNE')
+
+    plt.savefig(OUTDIR / f'Initiated_latent_space_plot_{source_tech}.png', dpi=300)
+    plt.close(fig)
 
 def visualize_discriminator_performance(trainer, test):
     # Path for caching the evaluation results
@@ -145,12 +164,11 @@ def visualize_discriminator_performance(trainer, test):
     fig = ax.get_figure()
     fig.savefig(OUTDIR / 'tsne_tech.png', dpi=300, bbox_inches='tight')
 
-
-
 def get_label_categories(data):
-    # Assuming all datasets have the same label categories
+    # Assuming both datasets have the same categories
     first_tech = list(data.keys())[0]
-    return data[first_tech].obs[LABEL].cat.categories
+    categories_first_tech = pd.Categorical(data[first_tech].obs[LABEL]).categories
+    return categories_first_tech
 
 def setup_models(label_categories, n_markers_dict):
     latent_dim = 8
@@ -192,7 +210,6 @@ def setup_models(label_categories, n_markers_dict):
 
     return vae_lut, discriminator
 
-# Initialize models and training
 def initialize_models_and_training(full, train, test, n_markers_dict):
     # Assuming LABEL is a global constant defined earlier
     label_categories = get_label_categories(full)
@@ -210,7 +227,7 @@ def initialize_models_and_training(full, train, test, n_markers_dict):
         source_key='lectin',
         disopt=disopt,
         genopt_lut=genopts,
-        beta=0.01)
+        beta=0.01) 
 
     return trainer
 
@@ -224,41 +241,26 @@ def plot_training_curve(history):
     plt.savefig(OUTDIR / f'training_curve_initializing.png', dpi=300)
     plt.close(fig)
 
-def plot_training_curve_2(history):
-    # Plot training curve logic
-    fig, ax = plt.subplots()
-    for key, pairs in history.items():
-        try:
-            steps, values = zip(*[(pair[0], pair[1]) for pair in pairs])  # Extract only the first two elements of each tuple
-            ax.plot(steps, values, label=key)
-        except ValueError as e:
-            print(f"Error while processing key {key}: {e}")
-    ax.legend()
-    plt.savefig(OUTDIR / 'training_curve_integration.png', dpi=300)
-    plt.close(fig)
-
 def integrate_target_to_source(trainer, full, train_datasets, test, integrated_technology='AB'):
     ckpt_dir = OUTDIR / f'2_integrate_{integrated_technology}' / 'model'
     source = integrated_technology
-    target =   'lectin' 
+    target = 'lectin'
     SEED = 42
 
     try:
         trainer.restore(ckpt_dir)
         print('Loaded checkpoint')
-        # Check if history is available and plot the training curve
-        if trainer.history:
-            print('Plotting training curve from cached history')
-            plot_training_curve_2(trainer.history)
+        
     except AssertionError:
         print('Training integration')
         np.random.seed(SEED)
         tf.compat.v1.random.set_random_seed(SEED)
 
         gs = 0
-        for epoch in range(256):
+        for epoch in range(750):
             print(f'Epoch {epoch}')
             for (data, dlabel, didx), (prior, plabel, pidx) in zip(train_datasets[source], cycle(train_datasets[target])): 
+                
                 # Train the discriminator
                 for _ in range(trainer.niters_discriminator):
                     disc_loss, _ = trainer.discriminator_step(source, target, data, prior, dlabel, plabel) 
@@ -350,6 +352,7 @@ def main():
         plot_training_curve(trainer.history['vae'])
     else:
         print('Loaded checkpoint')
+    perform_pca_and_plot_reconstructions(trainer, full[source], source, OUTDIR)
     visualize_latent_space(trainer, full, source)
     visualize_discriminator_performance(trainer, test)
     integrated_technology = integrate_target_to_source(trainer, full, train_datasets, test)
@@ -361,12 +364,12 @@ def main():
     except OSError:
         print('Cache loading failed')
         evald = trainer.evaluate(test, LABEL)
+        evald.obs[LABEL] = evald.obs[LABEL].astype('category')
         sc.tl.pca(evald)
         sc.tl.tsne(evald, n_jobs=5)
         evald.write(cache)
 
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8), gridspec_kw={'wspace':0.5})
-    fig, axes = plt.subplots(1, 1, figsize=(12, 8))  # Adjust subplot grid to 1x1 since we only have one label
+    fig, axes = plt.subplots(1, 1, figsize=(12, 8)) 
 
     # Plot t-SNE for 'cell_type'
     kwargs = {}  # Add any specific keyword arguments you need for 'cell_type'

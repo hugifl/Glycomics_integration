@@ -178,7 +178,8 @@ def test_reduced_genes(viable_conc_1, dataset_type_1, viable_conc_2, dataset_typ
 
     print("Test completed.")
 
-def load_filter_combine_data(viable_conc, dataset_type, OUTDIR):
+
+def load_filter_combine_data(viable_conc, dataset_type, OUTDIR, celltypes_to_keep):
     all_counts = []
     all_counts_no_gex = []
     all_metadata = []
@@ -204,9 +205,12 @@ def load_filter_combine_data(viable_conc, dataset_type, OUTDIR):
             n_gene_filter = col_data['n_gene'] > n_gene_10th_percentile
             n_umi_filter = col_data['n_umi'] > n_umi_10th_percentile
 
-            # Combine all filters
-            combined_filter = fractionMT_filter & n_gene_filter & n_umi_filter
+            # Cell type filter
+            cell_type_filter = np.isin(col_data['celltype_major'], celltypes_to_keep)
 
+            # Combine all filters
+            combined_filter = fractionMT_filter & n_gene_filter & n_umi_filter & cell_type_filter
+            
             # Convert boolean mask to indices
             indices = np.where(combined_filter)[0]
 
@@ -235,6 +239,7 @@ def load_filter_combine_data(viable_conc, dataset_type, OUTDIR):
             metadata_df = pd.DataFrame({
                 'cycle_phase': filtered_col_data['cycle_phase'],
                 'celltype_major': filtered_col_data['celltype_major'],
+                'celltype_final': filtered_col_data['celltype_final'],
                 'conc': conc_data
             })
 
@@ -249,8 +254,6 @@ def load_filter_combine_data(viable_conc, dataset_type, OUTDIR):
     concatenated_metadata = pd.concat(all_metadata, ignore_index=True)
 
     return concatenated_counts, concatenated_counts_no_gex, concatenated_metadata, no_ADT_fields
-
-
 
 
 def highly_variable_genes(AB_log_transformed_gene_data, lectin_log_transformed_gene_data, common_genes, OUTDIR):
@@ -346,7 +349,7 @@ def normalize_to_median_sample(data, sample_size=100):
     return normalized_data
 
 
-def filter_genes_for_analysis(celltype_markers, hvg_results, AB_log_transformed_gene_data, lectin_log_transformed_gene_data, common_genes):
+def filter_genes_for_analysis_old(celltype_markers, hvg_results, AB_log_transformed_gene_data, lectin_log_transformed_gene_data, common_genes, only_marker = False):
     # Extract top 40 cell type marker genes. Including additional marker genes doesn't seem to improve cell type classification with a random forest classifier.
     top_celltype_markers = set([gene for _, gene, _ in celltype_markers[:40]])
 
@@ -367,7 +370,8 @@ def filter_genes_for_analysis(celltype_markers, hvg_results, AB_log_transformed_
 
     # Combine the two sets to get the final list of genes
     final_gene_set = top_celltype_markers.union(top_hvg)
-    assert len(final_gene_set) == 240, "Final gene set does not contain 240 unique genes."
+    print("length of final gene set: ", len(final_gene_set))
+    #assert len(final_gene_set) == 240, "Final gene set does not contain 240 unique genes."
 
     # Get indices of the final gene set in common_genes
     final_gene_indices = [common_genes.index(gene) for gene in final_gene_set]
@@ -376,8 +380,44 @@ def filter_genes_for_analysis(celltype_markers, hvg_results, AB_log_transformed_
     filtered_AB_data = AB_log_transformed_gene_data[:, final_gene_indices]
     filtered_lectin_data = lectin_log_transformed_gene_data[:, final_gene_indices]
 
-    return filtered_AB_data, filtered_lectin_data
 
+    if only_marker:
+        return 
+    else:
+        return filtered_AB_data, filtered_lectin_data
+
+def filter_genes_for_analysis(celltype_markers, hvg_results, AB_log_transformed_gene_data, lectin_log_transformed_gene_data, common_genes, only_markers=False):
+    # Extract top 40 cell type marker genes.
+    top_celltype_markers = set([gene for _, gene, _ in celltype_markers[:40]])
+
+    if only_markers:
+        # If only markers are required, filter datasets for these markers and return
+        final_gene_indices = [common_genes.index(gene) for gene in top_celltype_markers]
+        filtered_AB_data = AB_log_transformed_gene_data[:, final_gene_indices]
+        filtered_lectin_data = lectin_log_transformed_gene_data[:, final_gene_indices]
+        return filtered_AB_data, filtered_lectin_data
+    else:
+        # Include top 200 highly variable genes, excluding those already in top cell type markers
+        top_hvg = set([gene for _, gene, _ in hvg_results[:200]])
+        additional_hvg_needed = 200 - len(top_hvg.difference(top_celltype_markers))
+
+        # Add HVGs until there are 240 unique genes in total
+        while additional_hvg_needed > 0:
+            top_hvg = set([gene for _, gene, _ in hvg_results[:200 + additional_hvg_needed]]).difference(top_celltype_markers)
+            additional_hvg_needed = 240 - len(top_celltype_markers.union(top_hvg))
+
+        # Combine the two sets to get the final list of genes
+        final_gene_set = top_celltype_markers.union(top_hvg)
+        print("Length of final gene set: ", len(final_gene_set))
+        
+        # Get indices of the final gene set in common_genes
+        final_gene_indices = [common_genes.index(gene) for gene in final_gene_set]
+
+        # Filter the datasets
+        filtered_AB_data = AB_log_transformed_gene_data[:, final_gene_indices]
+        filtered_lectin_data = lectin_log_transformed_gene_data[:, final_gene_indices]
+
+        return filtered_AB_data, filtered_lectin_data
 
 def save_to_anndata(data_matrix, metadata, file_path):
     # Create an AnnData object

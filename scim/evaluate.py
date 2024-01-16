@@ -86,7 +86,7 @@ def extract_matched_labels(source, target, row_idx, col_idx, keep_cols=None):
     
     return labels_matched  
 
-def get_accuracy(matches, colname_compare='cell_type', n_null=0, extended=False):
+def get_accuracy(matches, colname_compare='cell_type', n_null=0, extended=True):
     """Compute accuracy as true positive fraction
     matches: pandas dataframe, output from extract_matched_labels()
     colname_compare: column name to use for accuracy calculation {colname_compare}_source,

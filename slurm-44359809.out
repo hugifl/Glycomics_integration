@@ -1,0 +1,106 @@
+2024-01-15 16:57:27.485046: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2024-01-15 16:57:27.817195: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /cluster/apps/lsf/10.1/linux2.6-glibc2.3-x86_64/lib:/cluster/apps/gcc-4.8.5/r-4.1.3-zhohf2ta256vpv74j4uq24doqdfqyllj/rlib/R/lib:/cluster/apps/gcc-4.8.5/zlib-1.2.9-dfllxkobdix3ujpfjwsnnyv6vj7ufwcw/lib:/cluster/apps/gcc-4.8.5/openblas-0.2.20-ut6yhgxs5opzdjsqbfm7kaodfpqj7haf/lib:/cluster/apps/nss/python/3.7.4/x86_64/lib64:/cluster/apps/gcc-4.8.5/hdf5-1.10.9-j3urjulfpkxdslamrubc4p4ssfv5g5iu/lib:/cluster/apps/gcc-4.8.5/fastqc-0.11.9-idl77akhjkw5ounkpxxur2vg74aigeep/lib:/cluster/apps/gcc-4.8.5/emboss-6.6.0-j6uwtc5qzuwmm37w4fetov5n4wabfskd/lib:/cluster/apps/gcc-4.8.5/boost-1.74.0-pyomvleapuufbg4siz7g3jwtkkvwfudc/lib:/cluster/apps/gcc-4.8.5/perl-5.34.0-75yvrlt7bfvt76rc7r2oh245oic3idvg/lib:/cluster/home/hugifl/resources/software/lib:/cluster/apps/lsf/10.1/linux2.6-glibc2.3-x86_64/lib::
+2024-01-15 16:57:27.817241: I tensorflow/compiler/xla/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+2024-01-15 16:57:30.998908: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer.so.7'; dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /cluster/apps/lsf/10.1/linux2.6-glibc2.3-x86_64/lib:/cluster/apps/gcc-4.8.5/r-4.1.3-zhohf2ta256vpv74j4uq24doqdfqyllj/rlib/R/lib:/cluster/apps/gcc-4.8.5/zlib-1.2.9-dfllxkobdix3ujpfjwsnnyv6vj7ufwcw/lib:/cluster/apps/gcc-4.8.5/openblas-0.2.20-ut6yhgxs5opzdjsqbfm7kaodfpqj7haf/lib:/cluster/apps/nss/python/3.7.4/x86_64/lib64:/cluster/apps/gcc-4.8.5/hdf5-1.10.9-j3urjulfpkxdslamrubc4p4ssfv5g5iu/lib:/cluster/apps/gcc-4.8.5/fastqc-0.11.9-idl77akhjkw5ounkpxxur2vg74aigeep/lib:/cluster/apps/gcc-4.8.5/emboss-6.6.0-j6uwtc5qzuwmm37w4fetov5n4wabfskd/lib:/cluster/apps/gcc-4.8.5/boost-1.74.0-pyomvleapuufbg4siz7g3jwtkkvwfudc/lib:/cluster/apps/gcc-4.8.5/perl-5.34.0-75yvrlt7bfvt76rc7r2oh245oic3idvg/lib:/cluster/home/hugifl/resources/software/lib:/cluster/apps/lsf/10.1/linux2.6-glibc2.3-x86_64/lib::
+2024-01-15 16:57:31.000552: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer_plugin.so.7'; dlerror: libnvinfer_plugin.so.7: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /cluster/apps/lsf/10.1/linux2.6-glibc2.3-x86_64/lib:/cluster/apps/gcc-4.8.5/r-4.1.3-zhohf2ta256vpv74j4uq24doqdfqyllj/rlib/R/lib:/cluster/apps/gcc-4.8.5/zlib-1.2.9-dfllxkobdix3ujpfjwsnnyv6vj7ufwcw/lib:/cluster/apps/gcc-4.8.5/openblas-0.2.20-ut6yhgxs5opzdjsqbfm7kaodfpqj7haf/lib:/cluster/apps/nss/python/3.7.4/x86_64/lib64:/cluster/apps/gcc-4.8.5/hdf5-1.10.9-j3urjulfpkxdslamrubc4p4ssfv5g5iu/lib:/cluster/apps/gcc-4.8.5/fastqc-0.11.9-idl77akhjkw5ounkpxxur2vg74aigeep/lib:/cluster/apps/gcc-4.8.5/emboss-6.6.0-j6uwtc5qzuwmm37w4fetov5n4wabfskd/lib:/cluster/apps/gcc-4.8.5/boost-1.74.0-pyomvleapuufbg4siz7g3jwtkkvwfudc/lib:/cluster/apps/gcc-4.8.5/perl-5.34.0-75yvrlt7bfvt76rc7r2oh245oic3idvg/lib:/cluster/home/hugifl/resources/software/lib:/cluster/apps/lsf/10.1/linux2.6-glibc2.3-x86_64/lib::
+2024-01-15 16:57:31.000570: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Cannot dlopen some TensorRT libraries. If you would like to use Nvidia GPU with TensorRT, please make sure the missing libraries mentioned above are installed properly.
+2024-01-15 16:57:38.144796: E tensorflow/compiler/xla/stream_executor/cuda/cuda_driver.cc:267] failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+2024-01-15 16:57:38.145084: I tensorflow/compiler/xla/stream_executor/cuda/cuda_diagnostics.cc:156] kernel driver does not appear to be running on this host (eu-a2p-510): /proc/driver/nvidia/version does not exist
+2024-01-15 16:57:38.147697: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+/cluster/apps/nss/python/3.7.4/x86_64/lib64/python3.7/site-packages/statsmodels/tools/_testing.py:19: FutureWarning: pandas.util.testing is deprecated. Use the functions in the public API at pandas.testing instead.
+  import pandas.util.testing as tm
+Traceback (most recent call last):
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/training/saving/saveable_object_util.py", line 137, in restore
+    self.handle_op, self._var_shape, restored_tensor)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py", line 307, in shape_safe_assign_variable_handle
+    shape.assert_is_compatible_with(value_tensor.shape)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/framework/tensor_shape.py", line 1303, in assert_is_compatible_with
+    raise ValueError("Shapes %s and %s are incompatible" % (self, other))
+ValueError: Shapes (128,) and (64,) are incompatible
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "glycomics_iterative.py", line 86, in <module>
+    main()
+  File "glycomics_iterative.py", line 51, in main
+    trainer.restore(ckpt_dir_initialization)
+  File "/cluster/home/hugifl/scim/scim/trainer.py", line 60, in restore
+    res = self.saver.restore(path)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/checkpoint/checkpoint.py", line 2027, in restore
+    status = self._saver.restore(save_path=save_path)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/checkpoint/checkpoint.py", line 1499, in restore
+    checkpoint=checkpoint, proto_id=0).restore(self._graph_view.root)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/checkpoint/restore.py", line 61, in restore
+    restore_ops = self._restore_descendants()
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/checkpoint/restore.py", line 466, in _restore_descendants
+    registered_savers))
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/checkpoint/checkpoint.py", line 355, in restore_saveables
+    registered_savers).restore(self.save_path_tensor, self.options)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/checkpoint/functional_saver.py", line 499, in restore
+    restore_ops = restore_fn()
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/checkpoint/functional_saver.py", line 467, in restore_fn
+    ret = restore_fn(restored_tensors)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/training/saving/saveable_object_util.py", line 774, in _restore_from_tensors
+    return saveable_object_to_restore_fn(self.saveables)(restored_tensors)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/training/saving/saveable_object_util.py", line 812, in _restore_from_tensors
+    saveable_restored_tensors, restored_shapes=None)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/tensorflow/python/training/saving/saveable_object_util.py", line 142, in restore
+    f"and name {self.name}.") from e
+ValueError: Received incompatible tensor with shape (64,) when attempting to restore variable with shape (128,) and name model-AB/decoder_net/layer_with_weights-0/bias/.ATTRIBUTES/VARIABLE_VALUE.
+WARNING:tensorflow:Detecting that an object or model or tf.train.Checkpoint is being deleted with unrestored values. See the following logs for the specific values in question. To silence these warnings, use `status.expect_partial()`. See https://www.tensorflow.org/api_docs/python/tf/train/Checkpoint#restorefor details about the status object returned by the restore function.
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).save_counter
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.1
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.2
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.3
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.4
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.5
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.6
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.7
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.8
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.9
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.10
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.11
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-discriminator._variables.12
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.1
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.2
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.3
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.4
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.5
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.6
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.7
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.8
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.9
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.10
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.11
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.12
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.13
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.14
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.15
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.16
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.17
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.18
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.19
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.20
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.21
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.22
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.23
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.24
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.25
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.26
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.27
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.28
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.29
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.30
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.31
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.32
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.33
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.34
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.35
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.36
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.37
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.38
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.39
+WARNING:tensorflow:Value in checkpoint could not be found in the restored object: (root).opt-lectin._variables.40

@@ -10,11 +10,16 @@ from utils_data_prep import (load_filter_combine_data, highly_variable_genes,
 import scanpy as sc
 from sklearn.preprocessing import MinMaxScaler
 
-OUTIDR = Path('/cluster/scratch/hugifl/glycomics')
+OUTIDR = Path('/cluster/scratch/hugifl/11_glycomics')
 
 AB_viable_conc = [0.1, 0.25, 0.5, 1, 2]
 lectin_viable_conc = [0.1, 0.5, 1, 2] # there is 0.0 
-
+celltypes_major_to_keep = [4,5]
+all_features = False
+only_gex = False
+no_gex = True
+only_markers = True
+scaling = False
 # ----------------------------------------------------------- finding set of common genes ----------------------------------------------------------
 # In case the AB and the lectin datasets and the different titration concentrations have different sets of genes, 
 # we find the set of common genes and reduce the datasets to this set. The common genes are returned and all the files are processed and saved in the OUTDIR directory.
@@ -28,8 +33,8 @@ common_genes = reduce_to_common_genes(AB_viable_conc, 'AB', lectin_viable_conc, 
 # Combining the all titration concentrations except the highest one (4 mikrog/ml) into one dataset. 
 
 # Antibody dataset
-AB_final_counts, AB_final_counts_no_gex, AB_final_metadata, AB_no_ADT_fields = load_filter_combine_data(AB_viable_conc, dataset_type='AB', OUTDIR=OUTIDR)
-lectin_final_counts, lectin_final_counts_no_gex, lectin_final_metadata, lectin_no_ADT_fields = load_filter_combine_data(lectin_viable_conc, dataset_type='lectin', OUTDIR=OUTIDR)
+AB_final_counts, AB_final_counts_no_gex, AB_final_metadata, AB_no_ADT_fields = load_filter_combine_data(AB_viable_conc, dataset_type='AB', OUTDIR=OUTIDR, celltypes_to_keep=celltypes_major_to_keep)
+lectin_final_counts, lectin_final_counts_no_gex, lectin_final_metadata, lectin_no_ADT_fields = load_filter_combine_data(lectin_viable_conc, dataset_type='lectin', OUTDIR=OUTIDR, celltypes_to_keep=celltypes_major_to_keep)
 
 #adata_AB = anndata.AnnData(X=final_counts_AB, obs=final_metadata_AB)
 
@@ -66,7 +71,7 @@ celltype_markers = find_celltype_marker_genes(AB_final_metadata, lectin_final_me
 
 hvg_results = highly_variable_genes(AB_log_transformed_gene_data, lectin_log_transformed_gene_data, common_genes, OUTIDR)
 
-filtered_AB_data, filtered_lectin_data = filter_genes_for_analysis(celltype_markers, hvg_results, AB_log_transformed_gene_data, lectin_log_transformed_gene_data, common_genes)
+filtered_AB_data, filtered_lectin_data = filter_genes_for_analysis(celltype_markers, hvg_results, AB_log_transformed_gene_data, lectin_log_transformed_gene_data, common_genes, only_markers)
 
 # ------------------------------------------------------------------- Combine datasets -----------------------------------------------------------------
 # The lectin and AB final datasets are produced by concatenating the gene expression and AB/lectin feature counts.
@@ -75,21 +80,29 @@ filtered_AB_data, filtered_lectin_data = filter_genes_for_analysis(celltype_mark
 # Combine gene expression and protein abundance
 AB_combined_data = np.concatenate((AB_log_transformed_ADT_data, filtered_AB_data), axis=1)
 lectin_combined_data = np.concatenate((lectin_log_transformed_ADT_data, filtered_lectin_data), axis=1)
-# Min-Max scale the combined data
-AB_scaler = MinMaxScaler(feature_range=(0, 1))
-AB_scaled_combined_data = AB_scaler.fit_transform(AB_combined_data)
 
-lectin_scaler = MinMaxScaler(feature_range=(0, 1))
-lectin_scaled_combined_data = lectin_scaler.fit_transform(lectin_combined_data)
+# Min-Max scale the combined data
+if scaling:
+    AB_scaler = MinMaxScaler(feature_range=(0, 1))
+    AB_combined_data = AB_scaler.fit_transform(AB_combined_data)
+
+    lectin_scaler = MinMaxScaler(feature_range=(0, 1))
+    lectin_combined_data = lectin_scaler.fit_transform(lectin_combined_data)
 
 # --------------------------------------------------------------------- Save datasets -------------------------------------------------------------------
 
 AB_file_path = OUTIDR / "AB.h5ad"  
 lectin_file_path =  OUTIDR / "lectin.h5ad"   
 
-save_to_anndata(AB_scaled_combined_data, AB_final_metadata, AB_file_path)
-save_to_anndata(lectin_scaled_combined_data, lectin_final_metadata, lectin_file_path)
-
+if all_features:
+    save_to_anndata(AB_combined_data, AB_final_metadata, AB_file_path)
+    save_to_anndata(lectin_combined_data, lectin_final_metadata, lectin_file_path)
+if only_gex:
+    save_to_anndata(filtered_AB_data, AB_final_metadata, AB_file_path)
+    save_to_anndata(filtered_lectin_data, lectin_final_metadata, lectin_file_path)
+if no_gex:
+    save_to_anndata(AB_log_transformed_ADT_data, AB_final_metadata, AB_file_path)
+    save_to_anndata(lectin_log_transformed_ADT_data, lectin_final_metadata, lectin_file_path)
 
 
     

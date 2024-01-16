@@ -1,0 +1,16 @@
+computing common genes
+Traceback (most recent call last):
+  File "data_prep.py", line 26, in <module>
+    common_genes = reduce_to_common_genes(AB_viable_conc, 'AB', lectin_viable_conc, 'lectin', OUTIDR)
+  File "/cluster/home/hugifl/scim/utils_data_prep.py", line 107, in reduce_to_common_genes
+    common_genes = get_common_genes(dataset_paths_1, dataset_paths_2)
+  File "/cluster/home/hugifl/scim/utils_data_prep.py", line 129, in get_common_genes
+    with h5py.File(path, 'r') as file:
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/h5py/_hl/files.py", line 567, in __init__
+    fid = make_fid(name, mode, userblock_size, fapl, fcpl, swmr=swmr)
+  File "/cluster/home/hugifl/.local/lib/python3.7/site-packages/h5py/_hl/files.py", line 231, in make_fid
+    fid = h5f.open(name, flags, fapl=fapl)
+  File "h5py/_objects.pyx", line 54, in h5py._objects.with_phil.wrapper
+  File "h5py/_objects.pyx", line 55, in h5py._objects.with_phil.wrapper
+  File "h5py/h5f.pyx", line 106, in h5py.h5f.open
+FileNotFoundError: [Errno 2] Unable to open file (unable to open file: name = '/cluster/scratch/hugifl/glycomics_no_scaling/lectin.0.1_mikrog.GEX_cellrangerADT_SCE.h5', errno = 2, error message = 'No such file or directory', flags = 0, o_flags = 0)

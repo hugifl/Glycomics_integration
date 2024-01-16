@@ -30,28 +30,6 @@ def get_number_of_genes(full, tech_no=0):
     print("number of genes: ", full[first_tech].n_vars)
     return full[first_tech].n_vars
 
-# Load data and split into train and test sets
-def load_and_split_data_old():
-    full, train_datasets, test_datasets = {}, {}, {}
-    for tech in TECHS:
-        path = OUTDIR / f'{tech}.h5ad'
-        data = anndata.read(path)
-        n_markers = data.X.shape[1]
-
-        # Split data
-        train_idx = np.random.rand(len(data)) < 0.8
-        train_data = data[train_idx]
-        test_data = data[~train_idx]
-
-        # Create TensorFlow datasets
-        train_datasets[tech] = tf.data.Dataset.from_tensor_slices(
-            (train_data.X, train_data.obs[LABEL].cat.codes))
-        test_datasets[tech] = tf.data.Dataset.from_tensor_slices(
-            (test_data.X, test_data.obs[LABEL].cat.codes))
-
-        full[tech] = data
-
-    return full, train_datasets, test_datasets, n_markers
 
 def load_and_split_data():
     full, train_datasets, test = {}, {}, {}

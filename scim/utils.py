@@ -58,7 +58,7 @@ def plot_training(trainer, axes, OUTDIR):
     plot_history_keys(trainer, mse_keys + disc_keys, axes[0])
     plot_history_keys(trainer, probs_keys, axes[1])
     plot_history_keys(trainer, ['divergence'], axes[2])
-    plt.savefig(OUTDIR / f'training_curve_initializing.png', dpi=300)
+    plt.savefig(OUTDIR / f'training_curve_integration.png', dpi=300)
     return
 
 
