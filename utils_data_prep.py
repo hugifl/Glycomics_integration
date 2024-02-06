@@ -63,7 +63,7 @@ def find_celltype_marker_genes(AB_final_metadata, lectin_final_metadata, AB_log_
     plt.savefig(OUTDIR / 'feature_importance_performance.png')
 
     # Return both indices and gene names along with their importance scores
-    return [(idx, gene, importances[idx]) for idx, gene in zip(indices, sorted_gene_names)]
+    return [(idx, gene, importances[idx]) for idx, gene in zip(indices, sorted_gene_names)], sorted_gene_names
 
 def filter_counts_and_save(input_file_path, output_file_path, common_genes):
     if not output_file_path.exists():
@@ -179,7 +179,7 @@ def test_reduced_genes(viable_conc_1, dataset_type_1, viable_conc_2, dataset_typ
     print("Test completed.")
 
 
-def load_filter_combine_data(viable_conc, dataset_type, OUTDIR, celltypes_to_keep):
+def load_filter_combine_data(viable_conc, dataset_type, OUTDIR, celltypes_to_keep, percentile):
     all_counts = []
     all_counts_no_gex = []
     all_metadata = []
@@ -197,13 +197,13 @@ def load_filter_combine_data(viable_conc, dataset_type, OUTDIR, celltypes_to_kee
             # Filter for fractionMT
             fractionMT_filter = col_data['fractionMT'] <= 0.2
 
-            # Calculate 10th percentiles for n_gene and n_umi
-            n_gene_10th_percentile = np.percentile(col_data['n_gene'], 10)
-            n_umi_10th_percentile = np.percentile(col_data['n_umi'], 10)
+            # Calculate percentiles for n_gene and n_umi
+            n_gene_percentile = np.percentile(col_data['n_gene'], percentile)
+            n_umi_percentile = np.percentile(col_data['n_umi'], percentile)
 
             # Create filters for n_gene and n_umi
-            n_gene_filter = col_data['n_gene'] > n_gene_10th_percentile
-            n_umi_filter = col_data['n_umi'] > n_umi_10th_percentile
+            n_gene_filter = col_data['n_gene'] > n_gene_percentile
+            n_umi_filter = col_data['n_umi'] > n_umi_percentile
 
             # Cell type filter
             cell_type_filter = np.isin(col_data['celltype_major'], celltypes_to_keep)

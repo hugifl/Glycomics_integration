@@ -1,6 +1,7 @@
 import tensorflow as tf
 import os
 import numpy as np
+import csv
 import pandas as pd
 import anndata
 from itertools import cycle
@@ -8,7 +9,7 @@ import scanpy as sc
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
-import umap
+import umap.umap_ as umap
 from scim.utils import make_network
 from scim.model import VAE, Integrator
 from scim.discriminator import SpectralNormCritic
@@ -63,7 +64,6 @@ def load_and_split_data(TECHS, OUTDIR, LABEL, LABEL_2=None):
             (train_data.X, train_data.obs[LABEL].cat.codes, tf.range(len(train_data))))
         train_datasets[tech] = train_datasets[tech].batch(256, drop_remainder=True)
 
-        # Keep test data in its original format
         test[tech] = test_data
 
         full[tech] = data
@@ -296,50 +296,6 @@ def plot_integrated_latent_space_old(trainer, test, iteration, target_technology
         evald.obs[LABEL] = evald.obs[LABEL].astype('category')
         sc.tl.pca(evald)
         sc.tl.tsne(evald, n_jobs=5)
-        evald.write(cache)
-
-    kwargs = {}
-    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
-
-    sc.pl.tsne(evald, color=LABEL, ax=axes[0], show=False)
-    axes[0].set_title('t-SNE colored by Cell Type')
-    sc.pl.tsne(evald, color='tech', ax=axes[1], show=False)
-    axes[1].set_title('t-SNE colored by Tech')
-    sc.pl.tsne(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1)
-    axes[2].set_title('t-SNE colored by Probs-Discriminator')
-
-    plt.savefig(OUTDIR / f'tsne_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
-    plt.close(fig)
-
-    fig, axes = plt.subplots(2, 1, figsize=(12, 16))  
-    for key, ax in zip(TECHS, axes):  
-        mask = evald.obs['tech'] == key
-        sc.pl.tsne(evald[mask], color=LABEL, ax=ax, show=False, **kwargs)
-        ax.set_title(f't-SNE for {key}')
-    plt.savefig(OUTDIR / f'tsne_integrated_latent_space_separate_iter_{iteration}.png', dpi=300)
-    plt.close(fig)
-
-    if not LABEL2 is None:
-        fig, axes = plt.subplots(2, 1, figsize=(12, 16))  
-        for key, ax in zip(TECHS, axes):  
-            mask = evald.obs['tech'] == key
-            sc.pl.tsne(evald[mask], color=LABEL2, ax=ax, show=False, **kwargs)
-            ax.set_title(f't-SNE for {key}')
-        plt.savefig(OUTDIR / f'tsne_integrated_latent_space_separate_iter_{iteration}_{LABEL2}.png', dpi=300)
-        plt.close(fig)
-
-def plot_integrated_latent_space(trainer, test, iteration, target_technology, TECHS, LABEL, OUTDIR, LABEL2=None):
-    print(f"Plotting latent space after {iteration} iterations of integration")
-    cache = OUTDIR / f'2_integration_iteration_{iteration}_{target_technology}' / 'evals.h5ad' 
-    try:
-        evald = anndata.read(cache)
-        print(f'Read from {cache}')
-    except OSError:
-        print('Cache loading failed')
-        evald = trainer.evaluate(test, LABEL)
-        evald.obs[LABEL] = evald.obs[LABEL].astype('category')
-        sc.tl.pca(evald)
-        sc.tl.tsne(evald, n_jobs=5)
         sc.pp.neighbors(evald, use_rep='X_pca')
         #sc.tl.umap(evald)
         evald.write(cache)
@@ -358,7 +314,6 @@ def plot_integrated_latent_space(trainer, test, iteration, target_technology, TE
     plt.savefig(OUTDIR / f'tsne_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
     plt.close(fig)
 
-    # Plotting for each method: PCA, t-SNE, and UMAP
     for plot_method in ['pca', 'tsne']:
         fig, axes = plt.subplots(2, 1, figsize=(12, 16))
         for key, ax in zip(TECHS, axes):
@@ -367,8 +322,6 @@ def plot_integrated_latent_space(trainer, test, iteration, target_technology, TE
                 sc.pl.pca(evald[mask], color=LABEL, ax=ax, show=False)
             elif plot_method == 'tsne':
                 sc.pl.tsne(evald[mask], color=LABEL, ax=ax, show=False)
-            #else:  # UMAP
-            #    sc.pl.umap(evald[mask], color=LABEL, ax=ax, show=False)
             ax.set_title(f'{plot_method.upper()} for {key}')
         plt.savefig(OUTDIR / f'{plot_method}_integrated_latent_space_separate_iter_{iteration}_{LABEL}.png', dpi=300)
         plt.close(fig)
@@ -381,8 +334,299 @@ def plot_integrated_latent_space(trainer, test, iteration, target_technology, TE
                     sc.pl.pca(evald[mask], color=LABEL2, ax=ax, show=False)
                 elif plot_method == 'tsne':
                     sc.pl.tsne(evald[mask], color=LABEL2, ax=ax, show=False)
-                #else:  # UMAP
-                #    sc.pl.umap(evald[mask], color=LABEL2, ax=ax, show=False)
+                ax.set_title(f'{plot_method.upper()} for {key} ({LABEL2})')
+            plt.savefig(OUTDIR / f'{plot_method}_integrated_latent_space_separate_iter_{iteration}_{LABEL2}.png', dpi=300)
+            plt.close(fig)
+
+def plot_integrated_latent_space_newold(trainer, test, iteration, target_technology, TECHS, LABEL, OUTDIR, LABEL2=None):
+    print(f"Plotting latent space after {iteration} iterations of integration")
+    cache = OUTDIR / f'2_integration_iteration_{iteration}_{target_technology}' / 'evals.h5ad'
+    try:
+        evald = anndata.read(cache)
+        print(f'Read from {cache}')
+    except OSError:
+        print('Cache loading failed')
+        evald = trainer.evaluate(test, LABEL)
+        evald.obs[LABEL] = evald.obs[LABEL].astype('category')
+        evald.obs[LABEL2] = evald.obs[LABEL2].astype('category')
+        sc.tl.pca(evald)
+        sc.tl.tsne(evald, n_jobs=5)
+        sc.pp.neighbors(evald, use_rep='X_pca')
+
+        # Calculate UMAP using umap-learn
+        umap_model = umap.UMAP(n_components=2, random_state=42)
+        umap_embeddings = umap_model.fit_transform(evald.obsm['X_pca'])
+        evald.obsm['X_umap'] = umap_embeddings  # Add UMAP embeddings to AnnData object
+
+        evald.write(cache)
+    #tsne
+    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+    sc.pl.tsne(evald, color=LABEL, ax=axes[0], show=False)
+    axes[0].set_title('t-SNE colored by Cell Type')
+    sc.pl.tsne(evald, color='tech', ax=axes[1], show=False)
+    axes[1].set_title('t-SNE colored by Tech')
+    sc.pl.tsne(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1)
+    axes[2].set_title('t-SNE colored by Probs-Discriminator')
+
+    plt.savefig(OUTDIR / f'tsne_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
+    plt.close(fig)
+
+    #pca
+    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+    sc.pl.pca(evald, color=LABEL, ax=axes[0], show=False)
+    axes[0].set_title('t-SNE colored by Cell Type')
+    sc.pl.pca(evald, color='tech', ax=axes[1], show=False)
+    axes[1].set_title('t-SNE colored by Tech')
+    sc.pl.pca(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1)
+    axes[2].set_title('t-SNE colored by Probs-Discriminator')
+
+    plt.savefig(OUTDIR / f'pca_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
+    plt.close(fig)
+
+    #umap
+    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+    sc.pl.umap(evald, color=LABEL, ax=axes[0], show=False)
+    axes[0].set_title('t-SNE colored by Cell Type')
+    sc.pl.umap(evald, color='tech', ax=axes[1], show=False)
+    axes[1].set_title('t-SNE colored by Tech')
+    sc.pl.umap(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1)
+    axes[2].set_title('t-SNE colored by Probs-Discriminator')
+
+    plt.savefig(OUTDIR / f'umap_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
+    plt.close(fig)
+
+    for plot_method in ['pca', 'tsne', 'umap']:
+        fig, axes = plt.subplots(2, 1, figsize=(12, 16))
+        for key, ax in zip(TECHS, axes):
+            mask = evald.obs['tech'] == key
+            if plot_method == 'pca':
+                sc.pl.pca(evald[mask], color=LABEL, ax=ax, show=False)
+            elif plot_method == 'tsne':
+                sc.pl.tsne(evald[mask], color=LABEL, ax=ax, show=False)
+            elif plot_method == 'umap':
+                sc.pl.umap(evald[mask], color=LABEL, ax=ax, show=False)
+            ax.set_title(f'{plot_method.upper()} for {key}')
+        plt.savefig(OUTDIR / f'{plot_method}_integrated_latent_space_separate_iter_{iteration}_{LABEL}.png', dpi=300)
+        plt.close(fig)
+
+        if LABEL2 is not None:
+            fig, axes = plt.subplots(2, 1, figsize=(12, 16))
+            for key, ax in zip(TECHS, axes):
+                mask = evald.obs['tech'] == key
+                if plot_method == 'pca':
+                    sc.pl.pca(evald[mask], color=LABEL2, ax=ax, show=False)
+                elif plot_method == 'tsne':
+                    sc.pl.tsne(evald[mask], color=LABEL2, ax=ax, show=False)
+                elif plot_method == 'umap':
+                    sc.pl.umap(evald[mask], color=LABEL2, ax=ax, show=False)
+                ax.set_title(f'{plot_method.upper()} for {key} ({LABEL2})')
+            plt.savefig(OUTDIR / f'{plot_method}_integrated_latent_space_separate_iter_{iteration}_{LABEL2}.png', dpi=300)
+            plt.close(fig)
+
+def plot_integrated_latent_space(trainer, test, iteration, target_technology, TECHS, LABEL, OUTDIR, LABEL2=None):
+    print(f"Plotting latent space after {iteration} iterations of integration")
+    cache = OUTDIR / f'2_integration_iteration_{iteration}_{target_technology}' / 'evals.h5ad'
+    try:
+        evald = anndata.read(cache)
+        print(f'Read from {cache}')
+    except OSError:
+        print('Cache loading failed')
+        evald = trainer.evaluate(test, LABEL)
+        evald.obs[LABEL] = evald.obs[LABEL].astype('category')
+        if LABEL2 is not None:
+            evald.obs[LABEL2] = evald.obs[LABEL2].astype('category')
+        sc.tl.pca(evald)
+        sc.tl.tsne(evald, n_jobs=5)
+        sc.pp.neighbors(evald, use_rep='X_pca')
+
+        # Calculate UMAP using umap-learn
+        umap_model = umap.UMAP(n_components=2, random_state=42)
+        umap_embeddings = umap_model.fit_transform(evald.obsm['X_pca'])
+        evald.obsm['X_umap'] = umap_embeddings  # Add UMAP embeddings to AnnData object
+
+        evald.write(cache)
+
+    # Set global parameters for larger plot elements
+    plt.rcParams['legend.title_fontsize'] = 'large'
+    plt.rcParams['legend.fontsize'] = 'medium'
+    plt.rcParams['axes.labelsize'] = 'large'
+    plt.rcParams['axes.titlesize'] = 'x-large'
+    plt.rcParams['xtick.labelsize'] = 'medium'
+    plt.rcParams['ytick.labelsize'] = 'medium'
+
+    # Increase the font size for the titles and labels
+    title_fontsize = 20 
+    axis_label_fontsize = 16  
+    legend_fontsize = 16
+    point_size = 50  
+
+    def annotate_centroids_2(ax, data, label_col, plot_method):
+        """
+        Annotates the centroids of different cell types on the given axis.
+
+        Parameters:
+        - ax: The matplotlib axes object to annotate.
+        - data: The AnnData object used for plotting.
+        - label_col: The column name in data.obs that contains the cell type labels.
+        - plot_method: The method used for plotting ('pca', 'tsne', 'umap', etc.).
+        """
+        cell_types = data.obs[label_col].unique()
+        for cell_type in cell_types:
+            # Filter data for the current cell type
+            subset = data[data.obs[label_col] == cell_type]
+
+            # Calculate the centroid for the current cell type
+            if 'X_' + plot_method in subset.obsm:
+                centroid = np.mean(subset.obsm['X_' + plot_method], axis=0)
+                # Annotate the centroid on the plot
+                ax.text(centroid[0], centroid[1], cell_type, fontsize=16, ha='center', va='center',
+                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.3'))
+            else:
+                print(f"Warning: 'X_{plot_method}' not found in subset.obsm, skipping annotation for '{cell_type}'")
+
+    # Function to annotate centroids
+    def annotate_centroids(ax, data, label_col, plot_method):
+        cell_types = data.obs[label_col].unique()
+        for cell_type in cell_types:
+            subset = data[data.obs[label_col] == cell_type]
+            centroid = np.mean(subset.obsm['X_' + plot_method], axis=0)
+            ax.text(centroid[0], centroid[1], cell_type, fontsize=16, ha='center', va='center', 
+                    bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.3'))
+
+    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+    # Plotting and setting titles with larger font size
+    sc_tsne1 = sc.pl.tsne(evald, color=LABEL, ax=axes[0], show=False, size=point_size)
+    annotate_centroids_2(axes[0], evald, LABEL, 'tsne')
+    axes[0].set_title('t-SNE colored by Cell Type', fontsize=title_fontsize)
+    axes[0].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_tsne2 = sc.pl.tsne(evald, color='tech', ax=axes[1], show=False, size=point_size)
+    axes[1].set_title('t-SNE colored by Tech', fontsize=title_fontsize)
+    axes[1].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_tsne3 = sc.pl.tsne(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1, size=point_size)
+    axes[2].set_title('t-SNE colored by Probs-Discriminator', fontsize=title_fontsize)
+    axes[2].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    plt.savefig(OUTDIR / f'tsne_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
+    plt.close(fig)
+
+    #pca
+    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+    # Plotting and setting titles with larger font size
+    sc_pca1 = sc.pl.pca(evald, color=LABEL, ax=axes[0], show=False, size=point_size)
+    annotate_centroids_2(axes[0], evald, LABEL, 'pca')
+    axes[0].set_title('PCA colored by Cell Type', fontsize=title_fontsize)
+    axes[0].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_pca2 = sc.pl.pca(evald, color='tech', ax=axes[1], show=False, size=point_size)
+    axes[1].set_title('PCA colored by Tech', fontsize=title_fontsize)
+    axes[1].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_pca3 = sc.pl.pca(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1, size=point_size)
+    axes[2].set_title('PCA colored by Probs-Discriminator', fontsize=title_fontsize)
+    axes[2].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    plt.savefig(OUTDIR / f'pca_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
+    plt.close(fig)
+
+    #umap
+    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+    # Plotting and setting titles with larger font size
+    sc_plot1 = sc.pl.umap(evald, color=LABEL, ax=axes[0], show=False, size=point_size)
+    annotate_centroids_2(axes[0], evald, LABEL, 'umap')
+    axes[0].set_title('UMAP colored by Cell Type', fontsize=title_fontsize)
+    axes[0].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_plot2 = sc.pl.umap(evald, color='tech', ax=axes[1], show=False, size=point_size)
+    axes[1].set_title('UMAP colored by Tech', fontsize=title_fontsize)
+    axes[1].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_plot3 = sc.pl.umap(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1, size=point_size)
+    axes[2].set_title('UMAP colored by Probs-Discriminator', fontsize=title_fontsize)
+    axes[2].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    plt.savefig(OUTDIR / f'UMAP_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
+    plt.close(fig)
+
+    # Create plots for each method
+    for plot_method in ['pca', 'tsne', 'umap']:
+        fig, axes = plt.subplots(2, 1, figsize=(12, 16))
+        for key, ax in zip(TECHS, axes):
+            mask = evald.obs['tech'] == key
+            if plot_method == 'pca':
+                sc.pl.pca(evald[mask], color=LABEL, ax=ax, show=False, size=point_size)
+            elif plot_method == 'tsne':
+                sc.pl.tsne(evald[mask], color=LABEL, ax=ax, show=False, size=point_size)
+            elif plot_method == 'umap':
+                sc.pl.umap(evald[mask], color=LABEL, ax=ax, show=False, size=point_size)
+            annotate_centroids(ax, evald[mask], LABEL, plot_method)
+            ax.set_title(f'{plot_method.upper()} for {key}')
+        plt.savefig(OUTDIR / f'{plot_method}_integrated_latent_space_separate_iter_{iteration}_{LABEL}.png', dpi=300)
+        plt.close(fig)
+
+        if LABEL2 is not None:
+            fig, axes = plt.subplots(2, 1, figsize=(12, 16))
+            for key, ax in zip(TECHS, axes):
+                mask = evald.obs['tech'] == key
+                if plot_method == 'pca':
+                    sc.pl.pca(evald[mask], color=LABEL2, ax=ax, show=False, size=point_size)
+                elif plot_method == 'tsne':
+                    sc.pl.tsne(evald[mask], color=LABEL2, ax=ax, show=False, size=point_size)
+                elif plot_method == 'umap':
+                    sc.pl.umap(evald[mask], color=LABEL2, ax=ax, show=False, size=point_size)
+                annotate_centroids(ax, evald[mask], LABEL2, plot_method)
                 ax.set_title(f'{plot_method.upper()} for {key} ({LABEL2})')
             plt.savefig(OUTDIR / f'{plot_method}_integrated_latent_space_separate_iter_{iteration}_{LABEL2}.png', dpi=300)
             plt.close(fig)
@@ -404,7 +648,7 @@ def initialize_models_and_training(full, n_markers_dict, first_source, TECHS, LA
         source_key=first_source,
         disopt=disopt,
         genopt_lut=genopts,
-        beta=0.08) # set to 0.01 for original experiment
+        beta=0.05) # set to 0.01 for original experiment
 
     return trainer
 
@@ -533,6 +777,11 @@ def match_cells(OUTDIR, source, target, inter):
         source_pd = adata_to_pd(inter[inter.obs.tech==source], add_cell_code_name=source)
         target_pd = adata_to_pd(inter[inter.obs.tech==target], add_cell_code_name=target)
 
+        print("structure of source_pd: ", source_pd.shape)
+        print("structure of target_pd: ", target_pd.shape)
+        print("head of source_pd: ", source_pd.head())
+        print("head of target_pd: ", target_pd.head())
+
         # Build an extended knn graph with k = 10% cells
         G = get_cost_knn_graph(source_pd, target_pd, knn_k=20, null_cost_percentile=95, capacity_method='uniform')
 
@@ -547,11 +796,17 @@ def match_cells(OUTDIR, source, target, inter):
         print(f'Caching to {cache}')
     
     accuracy, n_tp, n_matches_min_n_tp = get_accuracy(matches, colname_compare='celltype_major')
+   
+    accuracy_file = 'celltype_accuracy.csv'
+    with open(OUTDIR / accuracy_file, 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow([accuracy])
+    
     print('accuracy (celltype_major): ', accuracy)
     confusion_matrix = get_confusion_matrix(matches, colname_compare='celltype_major')
     print('confusion matrix (celltype_major): ', confusion_matrix)
     #save confusion matrix
-    confusion_matrix.to_csv(OUTDIR / 'confusion_matrix.csv', index=False)
+    confusion_matrix.to_csv(OUTDIR / 'confusion_matrix_2.csv', index=False)
 
 def evaluate_latent_space(test, trainer, LABEL):
     codes = []
@@ -579,3 +834,279 @@ def evaluate_latent_space(test, trainer, LABEL):
     # Calculate the divergence score
     div_score = score_divergence(codes, sources, k=50)
     return div_score
+
+def plot_integrated_latent_space_full_data(trainer, full, iteration, target_technology, TECHS, LABEL, OUTDIR, LABEL2=None):
+    print(f"Plotting latent space after {iteration} iterations of integration")
+    cache = OUTDIR / f'2_integration_iteration_{iteration}_{target_technology}' / 'evals_full.h5ad'
+    try:
+        evald = anndata.read(cache)
+        print(f'Read from {cache}')
+    except OSError:
+        print('Cache loading failed')
+        evald = trainer.evaluate(full, LABEL)
+        evald.obs[LABEL] = evald.obs[LABEL].astype('category')
+        if LABEL2 is not None:
+            evald.obs[LABEL2] = evald.obs[LABEL2].astype('category')
+        sc.tl.pca(evald)
+        sc.tl.tsne(evald, n_jobs=5)
+        sc.pp.neighbors(evald, use_rep='X_pca')
+
+        # Calculate UMAP using umap-learn
+        umap_model = umap.UMAP(n_components=2, random_state=42)
+        umap_embeddings = umap_model.fit_transform(evald.obsm['X_pca'])
+        evald.obsm['X_umap'] = umap_embeddings  # Add UMAP embeddings to AnnData object
+
+        evald.write(cache)
+
+    umap_limits = {
+        'x': (evald.obsm['X_umap'][:, 0].min(), evald.obsm['X_umap'][:, 0].max()),
+        'y': (evald.obsm['X_umap'][:, 1].min(), evald.obsm['X_umap'][:, 1].max())
+    }
+
+
+    # Set global parameters for larger plot elements
+    plt.rcParams['legend.title_fontsize'] = 'large'
+    plt.rcParams['legend.fontsize'] = 'medium'
+    plt.rcParams['axes.labelsize'] = 'large'
+    plt.rcParams['axes.titlesize'] = 'x-large'
+    plt.rcParams['xtick.labelsize'] = 'medium'
+    plt.rcParams['ytick.labelsize'] = 'medium'
+
+    # Increase the font size for the titles and labels
+    title_fontsize = 20 
+    axis_label_fontsize = 16  
+    legend_fontsize = 16 
+    point_size = 50  
+
+    def annotate_centroids_2(ax, data, label_col, plot_method):
+        """
+        Annotates the centroids of different cell types on the given axis.
+
+        Parameters:
+        - ax: The matplotlib axes object to annotate.
+        - data: The AnnData object used for plotting.
+        - label_col: The column name in data.obs that contains the cell type labels.
+        - plot_method: The method used for plotting ('pca', 'tsne', 'umap', etc.).
+        """
+        cell_types = data.obs[label_col].unique()
+        for cell_type in cell_types:
+            # Filter data for the current cell type
+            subset = data[data.obs[label_col] == cell_type]
+
+            # Calculate the centroid for the current cell type
+            if 'X_' + plot_method in subset.obsm:
+                centroid = np.mean(subset.obsm['X_' + plot_method], axis=0)
+                # Annotate the centroid on the plot
+                ax.text(centroid[0], centroid[1], cell_type, fontsize=16, ha='center', va='center',
+                        bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.3'))
+            else:
+                print(f"Warning: 'X_{plot_method}' not found in subset.obsm, skipping annotation for '{cell_type}'")
+
+    # Function to annotate centroids
+    def annotate_centroids(ax, data, label_col, plot_method):
+        cell_types = data.obs[label_col].unique()
+        for cell_type in cell_types:
+            subset = data[data.obs[label_col] == cell_type]
+            centroid = np.mean(subset.obsm['X_' + plot_method], axis=0)
+            ax.text(centroid[0], centroid[1], cell_type, fontsize=16, ha='center', va='center', 
+                    bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.3'))
+
+    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+    # Plotting and setting titles with larger font size
+    sc_tsne1 = sc.pl.tsne(evald, color=LABEL, ax=axes[0], show=False, size=point_size)
+    annotate_centroids_2(axes[0], evald, LABEL, 'tsne')
+    axes[0].set_title('t-SNE colored by Cell Type', fontsize=title_fontsize)
+    axes[0].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_tsne2 = sc.pl.tsne(evald, color='tech', ax=axes[1], show=False, size=point_size)
+    axes[1].set_title('t-SNE colored by Tech', fontsize=title_fontsize)
+    axes[1].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_tsne3 = sc.pl.tsne(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1, size=point_size)
+    axes[2].set_title('t-SNE colored by Probs-Discriminator', fontsize=title_fontsize)
+    axes[2].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    plt.savefig(OUTDIR / f'full_data_tsne_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
+    plt.close(fig)
+
+    #pca
+    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+    # Plotting and setting titles with larger font size
+    sc_pca1 = sc.pl.pca(evald, color=LABEL, ax=axes[0], show=False, size=point_size)
+    annotate_centroids_2(axes[0], evald, LABEL, 'pca')
+    axes[0].set_title('PCA colored by Cell Type', fontsize=title_fontsize)
+    axes[0].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_pca2 = sc.pl.pca(evald, color='tech', ax=axes[1], show=False, size=point_size)
+    axes[1].set_title('PCA colored by Tech', fontsize=title_fontsize)
+    axes[1].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_pca3 = sc.pl.pca(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1, size=point_size)
+    axes[2].set_title('PCA colored by Probs-Discriminator', fontsize=title_fontsize)
+    axes[2].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    plt.savefig(OUTDIR / f'full_data_pca_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
+    plt.close(fig)
+
+    #umap
+    fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+    # Plotting and setting titles with larger font size
+    sc_plot1 = sc.pl.umap(evald, color=LABEL, ax=axes[0], show=False, size=point_size)
+    annotate_centroids_2(axes[0], evald, LABEL, 'umap')
+    axes[0].set_title('UMAP colored by Cell Type', fontsize=title_fontsize)
+    axes[0].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_plot2 = sc.pl.umap(evald, color='tech', ax=axes[1], show=False, size=point_size)
+    axes[1].set_title('UMAP colored by Tech', fontsize=title_fontsize)
+    axes[1].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    sc_plot3 = sc.pl.umap(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1, size=point_size)
+    axes[2].set_title('UMAP colored by Probs-Discriminator', fontsize=title_fontsize)
+    axes[2].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+    # For the legend, if applicable
+    legend = axes[0].get_legend()
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontsize(legend_fontsize) 
+
+    plt.savefig(OUTDIR / f'full_data_UMAP_integrated_latent_space_full_iter_{iteration}.png', dpi=300)
+    plt.close(fig)
+
+    unique_cell_types = evald.obs[LABEL].unique()
+    for cell_type in unique_cell_types:
+        fig, axes = plt.subplots(1, 3, figsize=(36, 8))  # Create a figure with 1 row and 3 columns of subplots
+
+        # Filter data for the specific cell type for the leftmost subplot
+        evald_filtered = evald[evald.obs[LABEL] == cell_type].copy()
+
+        axes[0].set_xlim(umap_limits['x'])
+        axes[0].set_ylim(umap_limits['y'])
+        sc.pl.umap(evald_filtered, color=LABEL, ax=axes[0], show=False, size=point_size)
+        annotate_centroids_2(axes[0], evald_filtered, LABEL, 'umap')
+        axes[0].set_title(f'UMAP colored by Cell Type {cell_type}', fontsize=title_fontsize)
+        axes[0].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+        # Adjust legend font size if applicable
+        legend = axes[0].get_legend()
+        if legend is not None:
+            for text in legend.get_texts():
+                text.set_fontsize(legend_fontsize) 
+
+        axes[1].set_xlim(umap_limits['x'])
+        axes[1].set_ylim(umap_limits['y'])
+        sc.pl.umap(evald, color='tech', ax=axes[1], show=False, size=point_size)
+        axes[1].set_title('UMAP colored by Tech', fontsize=title_fontsize)
+        axes[1].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+
+        axes[2].set_xlim(umap_limits['x'])
+        axes[2].set_ylim(umap_limits['y'])
+        sc_plot3 = sc.pl.umap(evald, color='probs-discriminator', ax=axes[2], show=False, color_map='PiYG', vmin=0, vmax=1, size=point_size)
+        axes[2].set_title('UMAP colored by Probs-Discriminator', fontsize=title_fontsize)
+        axes[2].tick_params(axis='both', which='major', labelsize=axis_label_fontsize)
+
+        plt.savefig(f'{OUTDIR}/full_data_UMAP_integrated_latent_space_{cell_type}_iter_{iteration}.png', dpi=300)
+        plt.close(fig)
+
+        fig, axes = plt.subplots(2, 1, figsize=(12, 16))
+        plot_method = 'umap'
+        for key, ax in zip(TECHS, axes):
+            mask = evald_filtered.obs['tech'] == key
+            ax.set_xlim(umap_limits['x'])
+            ax.set_ylim(umap_limits['y'])
+            sc.pl.umap(evald_filtered[mask], color=LABEL, ax=ax, show=False, size=point_size)
+            annotate_centroids(ax, evald_filtered[mask], LABEL, plot_method)
+            ax.set_title(f'{plot_method.upper()} for {key}')
+        plt.savefig(OUTDIR / f'full_data_{plot_method}_integrated_latent_space_{cell_type}_separate_iter_{iteration}_{LABEL}.png', dpi=300)
+        plt.close(fig)
+
+    # Create plots for each method
+    for plot_method in ['pca', 'tsne', 'umap']:
+        fig, axes = plt.subplots(2, 1, figsize=(12, 16))
+        for key, ax in zip(TECHS, axes):
+            mask = evald.obs['tech'] == key
+            if plot_method == 'pca':
+                sc.pl.pca(evald[mask], color=LABEL, ax=ax, show=False, size=point_size)
+            elif plot_method == 'tsne':
+                sc.pl.tsne(evald[mask], color=LABEL, ax=ax, show=False, size=point_size)
+            elif plot_method == 'umap':
+                sc.pl.umap(evald[mask], color=LABEL, ax=ax, show=False, size=point_size)
+            annotate_centroids(ax, evald[mask], LABEL, plot_method)
+            ax.set_title(f'{plot_method.upper()} for {key}')
+        plt.savefig(OUTDIR / f'full_data_{plot_method}_integrated_latent_space_separate_iter_{iteration}_{LABEL}.png', dpi=300)
+        plt.close(fig)
+
+        if LABEL2 is not None:
+            fig, axes = plt.subplots(2, 1, figsize=(12, 16))
+            for key, ax in zip(TECHS, axes):
+                mask = evald.obs['tech'] == key
+                if plot_method == 'pca':
+                    sc.pl.pca(evald[mask], color=LABEL2, ax=ax, show=False, size=point_size)
+                elif plot_method == 'tsne':
+                    sc.pl.tsne(evald[mask], color=LABEL2, ax=ax, show=False, size=point_size)
+                elif plot_method == 'umap':
+                    sc.pl.umap(evald[mask], color=LABEL2, ax=ax, show=False, size=point_size)
+                annotate_centroids(ax, evald[mask], LABEL2, plot_method)
+                ax.set_title(f'{plot_method.upper()} for {key} ({LABEL2})')
+            plt.savefig(OUTDIR / f'full_data_{plot_method}_integrated_latent_space_separate_iter_{iteration}_{LABEL2}.png', dpi=300)
+            plt.close(fig)
+
+def match_cells2(OUTDIR, source, target, inter):
+    cache = OUTDIR.joinpath('3_integrate', 'matches.csv')
+
+    try:
+        matches = pd.read_csv(cache)
+        print(f'Read from cache {cache}')
+
+    except OSError:
+        print(f'Cache loading failed')
+        # Perform bipartite matching on the latent embeddings
+        # This might take 5-10 mins
+        source_pd = adata_to_pd(inter[inter.obs.tech==source], add_cell_code_name=source)
+        target_pd = adata_to_pd(inter[inter.obs.tech==target], add_cell_code_name=target)
+
+        print("structure of source_pd: ", source_pd.shape)
+        print("structure of target_pd: ", target_pd.shape)
+        print("head of source_pd: ", source_pd.head())
+        print("head of target_pd: ", target_pd.head())

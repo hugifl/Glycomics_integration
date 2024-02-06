@@ -130,3 +130,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# Data folders
+plots/
+plots_R/
+seurat_data/
+seurat_data_2/
+
+# SLURM outputs
+slurm*
