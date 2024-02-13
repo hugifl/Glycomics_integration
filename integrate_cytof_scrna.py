@@ -66,7 +66,6 @@ def main():
         plot_integrated_latent_space(trainer, test, iteration, target_technology, TECHS, LABEL, OUTDIR)
         #target_technology = source_technology
         #source_technology = TECHS[1] if target_technology == TECHS[0] else TECHS[0]
-        #trainer.update_source_key(target_technology)
     
 if __name__ == "__main__":
     main()

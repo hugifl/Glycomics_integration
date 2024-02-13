@@ -56,12 +56,12 @@ class CriticBase(tf.keras.Model):
         return loss
 
 
-class NonSaturatingCritic(CriticBase):
+class NonSaturatingCritic(CriticBase):           # non-saturating loss for discriminator. loss for real and fake data
     def __init__(self, *args, **kwargs):
         super(NonSaturatingCritic, self).__init__(*args, **kwargs)
         return
 
-    def loss_fake(self, logits):
+    def loss_fake(self, logits):             # logits are the discriminators prediction on the 'fake' data. compares them to zeros (label for fake data)
         loss = tf.nn.sigmoid_cross_entropy_with_logits(
                 logits=logits,
                 labels=tf.zeros_like(logits)
@@ -69,7 +69,7 @@ class NonSaturatingCritic(CriticBase):
 
         return loss
 
-    def loss_real(self, logits):
+    def loss_real(self, logits):                # logits are the discriminators prediction on the 'real' data. compares them to ones (label for real data)
         loss = tf.nn.sigmoid_cross_entropy_with_logits(
                 logits=logits,
                 labels=tf.ones_like(logits)
@@ -78,7 +78,7 @@ class NonSaturatingCritic(CriticBase):
         return loss
 
 
-class SpectralNormMixin:
+class SpectralNormMixin:                    # spectral normalization for the discriminator
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

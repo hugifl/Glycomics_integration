@@ -239,9 +239,9 @@ def visualize_discriminator_performance(trainer, test, OUTDIR, LABEL):
     fig.savefig(OUTDIR / 'tsne_tech.png', dpi=300, bbox_inches='tight')
 
 def get_label_categories(data, LABEL):
-    # Assuming both datasets have the same categories
     first_tech = list(data.keys())[0]
     categories_first_tech = pd.Categorical(data[first_tech].obs[LABEL]).categories
+    print(categories_first_tech)                                                                                             ### PRINT
     return categories_first_tech
 
 def setup_models(label_categories, n_markers_dict, TECHS):
@@ -252,11 +252,11 @@ def setup_models(label_categories, n_markers_dict, TECHS):
     discriminator_net = make_network(
         doutput=1,
         units=[8] * 2,
-        dinput=latent_dim + len(label_categories),
+        dinput=latent_dim + len(label_categories), # why those dimensions ? 
         batch_norm=False,
         name='discriminator')
     
-    discriminator = SpectralNormCritic(
+    discriminator = SpectralNormCritic(   #spectral normalization
         discriminator_net,
         input_cats=label_categories)
 
@@ -632,13 +632,10 @@ def plot_integrated_latent_space(trainer, test, iteration, target_technology, TE
             plt.close(fig)
 
 def initialize_models_and_training(full, n_markers_dict, first_source, TECHS, LABEL):
-    # Assuming LABEL is a global constant defined earlier
     label_categories = get_label_categories(full, LABEL)
 
-    # Setup models
     vae_lut, discriminator = setup_models(label_categories, n_markers_dict, TECHS)
 
-    # Training logic
     genopts = {key: tf.keras.optimizers.Adam(learning_rate=0.0005) for key in TECHS}
     disopt = tf.keras.optimizers.Adam(learning_rate=0.0005)
 
@@ -677,7 +674,7 @@ def integrate_target_to_source(trainer, full, train_datasets, test, target_techn
         gs = 0
         for epoch in range(int(500)):
             print(f'Epoch {epoch}')
-            for (data, dlabel, didx), (prior, plabel, pidx) in zip(train_datasets[source_technology], cycle(train_datasets[target_technology])): 
+            for (data, dlabel, didx), (prior, plabel, pidx) in zip(train_datasets[source_technology], cycle(train_datasets[target_technology])): # if lectin was first source where we trained the VAE, now it's the target (prior, plabel)
                 # Train the discriminator
                 for _ in range(trainer.niters_discriminator):
                     disc_loss, _ = trainer.discriminator_step(source_technology, target_technology, data, prior, dlabel, plabel) 
@@ -734,7 +731,7 @@ def initialize_latent_space(SEED, source, target, trainer, train_datasets, ckpt_
     gs = 0
     for epoch in range(500):
         print(f'Epoch {epoch}')
-        for (data, dlabel, _), (prior, plabel, _) in zip(train_datasets[source], cycle(train_datasets[target])):
+        for (data, dlabel, _), (prior, plabel, _) in zip(train_datasets[source], cycle(train_datasets[target])): #data are lectin features, dlabel are cell types from lectin data. prior are protein features, plabel are cell types from protein data
             # Initializes latent space
             loss, (mse, kl), (codes, recon) = trainer.vae_step(source, data, beta= init_KL_beta)
             # Initialize the discriminator

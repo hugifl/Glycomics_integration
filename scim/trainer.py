@@ -14,7 +14,7 @@ def switch_obsm(adata, obsm_key, X_name='X'):
 
 class Trainer:
     def __init__(self, vae_lut, discriminator,
-                 source_key,
+                 source_key,     #eg lectin is first source
                  disopt, genopt_lut,
                  beta):
 
@@ -50,11 +50,6 @@ class Trainer:
         return tf.compat.v1.train.Checkpoint(**ckpt_lut)
 
 
-    def update_source_key(self, new_source_key):
-        self.source_key = new_source_key
-        # Ensure that this change is recognized by the checkpoint system
-        #self.saver._update_dependencies()
-
     def restore(self, ckpt_dir):
         path = tf.compat.v1.train.latest_checkpoint(ckpt_dir)
         res = self.saver.restore(path)
@@ -63,14 +58,14 @@ class Trainer:
         return
 
 
-    def discriminator_loss(self, tech,    # in the first cycle, tech will be AB
+    def discriminator_loss(self, tech,    # when initializing tech is the source (eg lectin, the first source key), codes are the lectin embeddings, prior_codes are the AB embeddings
                            codes, prior_codes,
                            code_label, prior_label):
 
         is_source = tech == self.source_key       
-        data_loss = self.discriminator.loss(codes,   # this is the loss funciton of discriminator.py data = codes
+        data_loss = self.discriminator.loss(codes,    # loss will be calculated comparing the code labels (the category gessed by the discriminator) to 1 (real data)
                                             labels=code_label,
-                                            real=is_source)
+                                            real=is_source) # when initializing on lectin, this is the loss of the discriminator on the lectin embeddings, real = True
 
         prior_loss = self.discriminator.loss(prior_codes,
                                              labels=prior_label,
@@ -79,13 +74,13 @@ class Trainer:
         return disc_loss, (data_loss, prior_loss)
 
     def discriminator_step(self,
-                           dtech, ptech,                  # ptech is target (eg lectin in our case), the technology we want to integrate to (the prior)
+                           dtech, ptech,                  # when initializing latent space, dtech is the source (eg lectin, the first source key) and ptech is the target
                            data, prior,
                            dlabel=None, plabel=None,
                            ):
 
         tf.keras.backend.set_learning_phase(True)
-        _, dcodes, _ = self.vae_lut[dtech].forward(data)
+        _, dcodes, _ = self.vae_lut[dtech].forward(data)   # dcodes are the embeddings of the data (when initializing on lectin, this are the lectin embeddings)
         _, pcodes, _ = self.vae_lut[ptech].forward(prior)
 
         tvs = self.discriminator.trainable_variables
@@ -117,14 +112,14 @@ class Trainer:
         tf.keras.backend.set_learning_phase(True)
         vae = self.vae_lut[tech]
         opt = self.genopt_lut[tech]
-        is_source = tech is self.source_key    # False for AB
+        is_source = tech is self.source_key    # False for AB in first integration cycle
         tvs = vae.trainable_variables
 
         with tf.GradientTape() as tape:
             _, (nll, _), (codes, recon) = vae.call(data)
             adv = self.discriminator.loss(codes,
                                           labels=label,
-                                          real=not is_source)
+                                          real=not is_source)   # here it's not is_source because the loss shows how good it can foold the discriminator 
             loss = nll + self.beta * adv                  # nll is the reconstruction loss
 
         grads = tape.gradient(loss, tvs)
