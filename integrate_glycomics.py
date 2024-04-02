@@ -28,12 +28,12 @@ from utils_training import (get_number_of_genes, load_and_split_data, perform_pc
 tf.compat.v1.enable_eager_execution()
 
 # Define constants and paths
-OUTDIR = Path('/cluster/scratch/hugifl/4_glycomics_5')
+OUTDIR = Path('/cluster/scratch/hugifl/9_glycomics_6_3_c2_CLR_cell_nolog')
 TECHS = ['lectin', 'AB']
-first_source = 'lectin'
+first_source = 'AB'
 LABEL = 'celltype_major'
 LABEL_2 = 'celltype_final'
-iterations = 8
+iterations = 6
 initialization_KL_beta = 0.001 # set to 0.001 for original experiment
 
 def main():
@@ -76,12 +76,11 @@ def main():
         #visualize_latent_space(trainer, full, target_technology, OUTDIR, LABEL, iteration=iteration)
         #visualize_latent_space(trainer, full, source_technology, OUTDIR, LABEL, iteration=iteration)
         #cache = OUTDIR.joinpath(f'2_integrate_{iteration}', 'evals.h5ad') 
-        plot_integrated_latent_space(trainer, test, iteration, target_technology, TECHS, LABEL, OUTDIR, LABEL2=LABEL_2)
-        plot_integrated_latent_space_full_data(trainer, full, iteration, target_technology, TECHS, LABEL, OUTDIR, LABEL2=None)
+        plot_integrated_latent_space(trainer, test, iteration, target_technology, source_technology, TECHS, LABEL, OUTDIR, LABEL2=LABEL_2)
+        plot_integrated_latent_space_full_data(trainer, full, iteration, target_technology, source_technology, TECHS, LABEL, OUTDIR, LABEL2=None)
         inter = cache_model_outputs(trainer, full, target_technology, source_technology, OUTDIR, LABEL, iteration, target_technology)
         target_technology = source_technology
         source_technology = TECHS[1] if target_technology == TECHS[0] else TECHS[0]
-        trainer.update_source_key(target_technology)
     match_cells(OUTDIR, source, target, inter)
     
     

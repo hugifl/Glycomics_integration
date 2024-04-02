@@ -65,6 +65,7 @@ def find_celltype_marker_genes(AB_final_metadata, lectin_final_metadata, AB_log_
     # Return both indices and gene names along with their importance scores
     return [(idx, gene, importances[idx]) for idx, gene in zip(indices, sorted_gene_names)], sorted_gene_names
 
+
 def filter_counts_and_save(input_file_path, output_file_path, common_genes):
     if not output_file_path.exists():
         with h5py.File(input_file_path, 'r') as file:
@@ -333,6 +334,19 @@ def only_highly_variable_genes_old(adata, non_gene_features):
     # Update AnnData object to keep only the columns with these names
     adata = adata[:, column_names_to_keep]
     return adata
+
+def CLR_across_cells(data, pseudocount=0.01):
+    adjusted_data = data + pseudocount
+    geometric_means = np.exp(np.mean(np.log(adjusted_data), axis=0))
+    normalized_data = np.log(adjusted_data) - np.log(geometric_means)
+    return normalized_data
+
+def CLR_across_features(data, pseudocount=0.01):
+    adjusted_data = data + pseudocount
+    geometric_means = np.exp(np.mean(np.log(adjusted_data), axis=1, keepdims=True))
+    normalized_data = np.log(adjusted_data) - np.log(geometric_means)
+
+    return normalized_data
 
 
 def normalize_to_median_sample(data, sample_size=100):

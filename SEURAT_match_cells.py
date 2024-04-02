@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from anndata import AnnData
 import scanpy as sc
 import csv
+import os
 import numpy as np
 from scim.matching import get_cost_knn_graph, mcmf
 
@@ -63,12 +64,15 @@ def get_confusion_matrix(matches, colname_compare='celltype_', tech1 = 'AB', tec
         return pd.crosstab(y_source, y_target)
     
 # Paths
-outdir = '/cluster/home/hugifl/scim/plots_R/'
-datadir = '/cluster/home/hugifl/scim/seurat_data_2/'
-dataset = 'rna'
+outdir = '/cluster/home/hugifl/scim/plots_R_2/'
+datadir = '/cluster/home/hugifl/scim/seurat_data_5/'
+dataset = 'ADT'
 
-index_lectin = 4301
-PC_dimensions = 29
+if not os.path.exists(outdir):
+    os.makedirs(outdir)
+
+index_lectin = 4301#4108 #4301
+PC_dimensions = 14
 
 # Load data
 pca_embeddings = pd.read_csv(f"{datadir}{dataset}_PCA_coordinates.csv", index_col=0)

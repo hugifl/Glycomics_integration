@@ -183,3 +183,20 @@ class Trainer:
             trail = hist.setdefault(k, list())
             trail.append((step, v))
         return
+    
+    def get_trained_vae_lut(self):
+        """Return the trained VAEs lookup table (vae_lut)."""
+        return self.vae_lut
+    
+    def set_vae_lut(self, new_vae_lut):
+        """
+        Replace the existing VAE lookup table (vae_lut) with a new one.
+
+        Parameters:
+        - new_vae_lut: A dictionary of VAE models to replace the existing vae_lut.
+        """
+        self.vae_lut = new_vae_lut
+        # Update the list of technologies based on the new VAEs
+        self.techs = list(new_vae_lut.keys())
+        # Optionally, re-initialize the saver to reflect the change in VAE models
+        self.saver = self._init_saver()

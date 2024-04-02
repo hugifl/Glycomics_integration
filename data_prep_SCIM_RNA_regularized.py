@@ -18,19 +18,16 @@ from utils_data_prep import (load_filter_combine_data, highly_variable_genes,
 import scanpy as sc
 from sklearn.preprocessing import MinMaxScaler
 
-OUTIDR = Path('/cluster/scratch/hugifl/')
+OUTIDR = Path('/cluster/scratch/hugifl/9_glycomics_8_RNA_regularized_c2_3')
 
 
 # ----------------------------------------------------------- Parameters ----------------------------------------------------------
-AB_viable_conc = [0.1, 0.25, 0.5, 1, 2]# [0.1, 0.25, 0.5, 1, 2]
-lectin_viable_conc = [0.1, 0.5, 1, 2] # there is 0.0  [0.1, 0.5, 1, 2]
-celltypes_major_to_keep = [4,5,1] # [4,5,1,3,6,7]
-all_features = False # if True, all features are used, if False, only either expression or ADT features are used
-only_gex = False # if True, all features are used, if False, only either expression or ADT features are used
-no_gex = True 
+AB_viable_conc = [2] # [0.1, 0.25, 0.5, 1, 2]
+lectin_viable_conc = [2] # there is 0.0  [0.1, 0.5, 1, 2]
+celltypes_major_to_keep = [4,5,1,3,6,7] # [4,5,1,3,6,7]
 only_markers = True   # if True, only the marker genes are used, if False, marker genes + highly variable genes are used
 scaling = False
-log = True #set to true usually
+log = True
 percentile = 10
 ADT_normalization = 'library_size' # CLR_across_cells, CLR_across_features, library_size
 # ----------------------------------------------------------- finding set of common genes ----------------------------------------------------------
@@ -107,37 +104,35 @@ filtered_AB_data, filtered_lectin_data = filter_genes_for_analysis(celltype_mark
 # The lectin and AB final datasets are produced by concatenating the gene expression and AB/lectin feature counts.
 # The features are scaled to the 0-1 range using the MinMaxScaler from scikit-learn to ensure that the features are on the same scale.
 
-# Combine gene expression and protein abundance
-AB_combined_data = np.concatenate((AB_log_transformed_ADT_data, filtered_AB_data), axis=1)
-lectin_combined_data = np.concatenate((lectin_log_transformed_ADT_data, filtered_lectin_data), axis=1)
+# RNA combined dataset
+combined_gene_data = np.concatenate((filtered_AB_data, filtered_lectin_data), axis=0)
+combined_metadata = pd.concat([AB_final_metadata, lectin_final_metadata], ignore_index=True)
 
 # Min-Max scale the combined data
 if scaling:
     AB_scaler = MinMaxScaler(feature_range=(0, 1))
-    AB_combined_data = AB_scaler.fit_transform(AB_combined_data)
+    AB_log_transformed_ADT_data = AB_scaler.fit_transform(AB_log_transformed_ADT_data)
 
     lectin_scaler = MinMaxScaler(feature_range=(0, 1))
-    lectin_combined_data = lectin_scaler.fit_transform(lectin_combined_data)
+    lectin_log_transformed_ADT_data = lectin_scaler.fit_transform(lectin_log_transformed_ADT_data)
+
+    combined_scaler = MinMaxScaler(feature_range=(0, 1))
+    combined_gene_data = combined_scaler.fit_transform(combined_gene_data)
 
 # --------------------------------------------------------------------- Save datasets -------------------------------------------------------------------
 
 AB_file_path = OUTIDR / "AB.h5ad"  
 lectin_file_path =  OUTIDR / "lectin.h5ad"   
+RNA_file_path =  OUTIDR / "RNA.h5ad"   
 
-print("marker names: ", marker_names)
-print("first 40 markers: ", marker_names[:40])
 # saving the marker names
 marker_names_df = pd.DataFrame(marker_names)
 marker_names_df.to_csv(OUTIDR / "marker_names.csv")
 
-if all_features:
-    save_to_anndata(AB_combined_data, AB_final_metadata, AB_file_path)
-    save_to_anndata(lectin_combined_data, lectin_final_metadata, lectin_file_path)
-if only_gex:
-    save_to_anndata(filtered_AB_data, AB_final_metadata, AB_file_path)
-    save_to_anndata(filtered_lectin_data, lectin_final_metadata, lectin_file_path)
-if no_gex:
-    save_to_anndata(AB_log_transformed_ADT_data, AB_final_metadata, AB_file_path)
-    save_to_anndata(lectin_log_transformed_ADT_data, lectin_final_metadata, lectin_file_path)
+
+
+save_to_anndata(AB_log_transformed_ADT_data, AB_final_metadata, AB_file_path)
+save_to_anndata(lectin_log_transformed_ADT_data, lectin_final_metadata, lectin_file_path)
+save_to_anndata(combined_gene_data, combined_metadata, RNA_file_path)
 
 
