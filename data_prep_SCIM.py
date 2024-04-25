@@ -18,12 +18,12 @@ from utils_data_prep import (load_filter_combine_data, highly_variable_genes,
 import scanpy as sc
 from sklearn.preprocessing import MinMaxScaler
 
-OUTIDR = Path('/cluster/scratch/hugifl/')
+OUTIDR = Path('/cluster/scratch/hugifl/glycomics_c2_top_3')
 
 
 # ----------------------------------------------------------- Parameters ----------------------------------------------------------
-AB_viable_conc = [0.1, 0.25, 0.5, 1, 2]# [0.1, 0.25, 0.5, 1, 2]
-lectin_viable_conc = [0.1, 0.5, 1, 2] # there is 0.0  [0.1, 0.5, 1, 2]
+AB_viable_conc = [2] # [0.1, 0.25, 0.5, 1, 2]
+lectin_viable_conc = [2] # there is 0.0  [0.1, 0.5, 1, 2]
 celltypes_major_to_keep = [4,5,1] # [4,5,1,3,6,7]
 all_features = False # if True, all features are used, if False, only either expression or ADT features are used
 only_gex = False # if True, all features are used, if False, only either expression or ADT features are used
@@ -33,6 +33,7 @@ scaling = False
 log = True #set to true usually
 percentile = 10
 ADT_normalization = 'library_size' # CLR_across_cells, CLR_across_features, library_size
+
 # ----------------------------------------------------------- finding set of common genes ----------------------------------------------------------
 # In case the AB and the lectin datasets and the different titration concentrations have different sets of genes, 
 # we find the set of common genes and reduce the datasets to this set. The common genes are returned and all the files are processed and saved in the OUTDIR directory.

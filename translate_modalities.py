@@ -29,15 +29,16 @@ from utils_training import (get_number_of_genes, load_and_split_data, perform_pc
 tf.compat.v1.enable_eager_execution()
 
 # Define constants and paths
-OUTDIR = Path('/cluster/scratch/hugifl/4_glycomics_7_3_c2')  
-TECHS = ['lectin', 'AB']
+OUTDIR = Path('//cluster/scratch/hugifl/4_glycomics_7_2')  
+TECHS = ['AB','lectin']
 first_source = 'AB'
 LABEL = 'celltype_major'
 LABEL_2 = 'celltype_final'
 
 iteration_to_use = 6
-source = 'AB'
-target = 'lectin'
+target = 'AB'
+source = 'lectin'
+
 
 ckpt_dir = OUTDIR / f'2_integration_iteration_{iteration_to_use}_{target}' / 'model'
 

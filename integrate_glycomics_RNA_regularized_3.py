@@ -31,7 +31,7 @@ from utils_training import (get_number_of_genes, load_and_split_data, perform_pc
 tf.compat.v1.enable_eager_execution()
 
 # Define constants and paths
-OUTDIR = Path('/cluster/scratch/hugifl/9_glycomics_8_RNA_regularized_c2_inter_1')
+OUTDIR = Path('/cluster/scratch/hugifl/9_glycomics_8_RNA_regularized_c0512only_inter_1')
 TECHS = ['RNA', 'AB','lectin']
 ADT_TECHS = ['AB','lectin']
 pre_integration_source = 'RNA'

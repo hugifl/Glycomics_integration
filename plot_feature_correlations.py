@@ -5,11 +5,11 @@ import os
 import numpy as np
 
 
-model = '4_glycomics_7_3_c2'
-file_path = f'/cluster/scratch/hugifl/{model}/integrated_features_and_labels.csv'
+model = '9_glycomics_6_2'
+file_path =  '/cluster/scratch/hugifl/9_glycomics_6_2/integrated_features_and_labels.csv' #f'/cluster/scratch/hugifl/{model}/integrated_features_and_labels.csv'
 df = pd.read_csv(file_path)
 outpath = f'/cluster/home/hugifl/scim/plots/feature_correlations/{model}'
-RNA_features = 40
+RNA_features = 0
 correlation_method = 'spearman'
 
 lectin_features = ['ADT_AAL', 'ADT_PNA', 'ADT_UEA.II', 'ADT_LcH', 'ADT_PHA_E', 'ADT_SNA', 'ADT_VVA', 'ADT_PSA', 'ADT_ECA', 'ADT_HPA', 'ADT_Jacalin', 'ADT_RCA', 'ADT_WGA', 'ADT_UEA.I', 'ADT_ConA', 'ADT_AOL']
@@ -52,15 +52,21 @@ def calculate_and_plot_correlations(df, df_name, correlation_method, outpath, RN
     if not os.path.exists(outpath):
         os.makedirs(outpath)
     
+    print("shape of df is", df.shape)
+    print("head of df is", df.head())
+    print("colnames of df are", df.columns)
     df_lectin = df[df['tech'] == 'lectin']
     df_AB = df[df['tech'] == 'AB']
-
+    print("RNA_features is", RNA_features)
+    
     lectin_feature_cols = [col for col in df.columns if 'lectin_feature_' in col]
     AB_feature_cols = [col for col in df.columns if 'AB_feature_' in col]
     total_lectin_features = len(lectin_feature_cols)
     total_AB_features = len(AB_feature_cols)
     total_lectin_ADT_features = total_lectin_features - RNA_features
     total_AB_ADT_features = total_AB_features - RNA_features
+    print("total lectin ADT features is", total_lectin_ADT_features)
+    print("total AB ADT features is", total_AB_ADT_features)
 
     for tech, tech_df in zip(['lectin', 'AB', 'full'], [df_lectin, df_AB, df]):
         rna_lectin_features = tech_df.iloc[:, 1+total_lectin_ADT_features:1+total_lectin_features]
@@ -73,7 +79,7 @@ def calculate_and_plot_correlations(df, df_name, correlation_method, outpath, RN
             for ab_col in non_rna_ab_features.columns:
                 correlation = non_rna_lectin_features[lectin_col].corr(non_rna_ab_features[ab_col], method=correlation_method)
                 non_rna_correlation_df.at[lectin_col, ab_col] = correlation
-
+        print("shape non_rna_correlation_df is", non_rna_correlation_df.shape)
         non_rna_correlation_df.index = lectin_features
         non_rna_correlation_df.columns = AB_features
 

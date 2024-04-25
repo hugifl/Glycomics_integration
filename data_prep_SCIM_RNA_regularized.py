@@ -18,13 +18,13 @@ from utils_data_prep import (load_filter_combine_data, highly_variable_genes,
 import scanpy as sc
 from sklearn.preprocessing import MinMaxScaler
 
-OUTIDR = Path('/cluster/scratch/hugifl/9_glycomics_8_RNA_regularized_c2_3')
+OUTIDR = Path('/cluster/scratch/hugifl/9_glycomics_8_RNA_regularized_c0512only_inter_1')
 
 
 # ----------------------------------------------------------- Parameters ----------------------------------------------------------
-AB_viable_conc = [2] # [0.1, 0.25, 0.5, 1, 2]
-lectin_viable_conc = [2] # there is 0.0  [0.1, 0.5, 1, 2]
-celltypes_major_to_keep = [4,5,1,3,6,7] # [4,5,1,3,6,7]
+AB_viable_conc = [0.5, 1, 2] # [0.1, 0.25, 0.5, 1, 2]
+lectin_viable_conc = [0.5, 1, 2] # there is 0.0  [0.1, 0.5, 1, 2]
+celltypes_major_to_keep = [4,5,1,3,6,7]# [4,5,1,3,6,7]
 only_markers = True   # if True, only the marker genes are used, if False, marker genes + highly variable genes are used
 scaling = False
 log = True

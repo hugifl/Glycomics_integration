@@ -28,12 +28,12 @@ from utils_training import (get_number_of_genes, load_and_split_data, perform_pc
 tf.compat.v1.enable_eager_execution()
 
 # Define constants and paths
-OUTDIR = Path('/cluster/scratch/hugifl/9_glycomics_6_3_c2_CLR_cell_nolog')
+OUTDIR = Path('/cluster/scratch/hugifl/9_glycomics_8_c0512only_1')
 TECHS = ['lectin', 'AB']
 first_source = 'AB'
 LABEL = 'celltype_major'
 LABEL_2 = 'celltype_final'
-iterations = 6
+iterations = 10
 initialization_KL_beta = 0.001 # set to 0.001 for original experiment
 
 def main():
